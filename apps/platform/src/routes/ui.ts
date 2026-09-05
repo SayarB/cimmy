@@ -10,6 +10,7 @@ import { enrolledRepos, runArtifacts, runs } from "../db/schema.js";
 import { authProviders } from "../auth/auth.js";
 import type { AuthVars } from "../auth/session.js";
 import { authPage, escapeHtml, shellPage } from "../ui/layout.js";
+import { renderMarkdown } from "../ui/markdown.js";
 import { APP_CSS } from "../ui/styles.js";
 import { statusGlyph, statusLabel } from "../ui/status.js";
 
@@ -395,6 +396,24 @@ export function uiRoutes(deps: AppDeps) {
 
     const skillLabel = Array.isArray(run.skillIds) ? run.skillIds.join(", ") : "";
     const preClass = activeTab === "report" ? "report" : activeTab === "transcript" ? "transcript" : "meta";
+    const reportView =
+      activeTab === "report"
+        ? (() => {
+            const view = (c.req.query("view") || "preview").toLowerCase();
+            const activeView = view === "source" ? "source" : "preview";
+            const previewHtml = renderMarkdown(panelText);
+            return html`
+      <div class="view-toggle" role="group" aria-label="Report view">
+        <a href="/runs/${id}?tab=report&view=preview" class="btn btn-secondary" ${activeView === "preview" ? raw('aria-current="page"') : raw("")}>Preview</a>
+        <a href="/runs/${id}?tab=report&view=source" class="btn btn-secondary" ${activeView === "source" ? raw('aria-current="page"') : raw("")}>Source</a>
+      </div>
+      ${
+        activeView === "preview"
+          ? html`<article class="md-preview report-preview">${raw(previewHtml)}</article>`
+          : html`<pre class="report">${escapeHtml(panelText)}</pre>`
+      }`;
+          })()
+        : html`<pre class="${preClass}">${escapeHtml(panelText)}</pre>`;
 
     const body = html`
       <p class="section-label">Run</p>
@@ -418,7 +437,7 @@ export function uiRoutes(deps: AppDeps) {
         <a class="btn btn-secondary" href="/api/runs/${id}">JSON</a>
       </p>
 
-      <pre class="${preClass}">${escapeHtml(panelText)}</pre>
+      ${reportView}
 
       ${
         ["queued", "running", "starting", "pending"].includes(run.status)
