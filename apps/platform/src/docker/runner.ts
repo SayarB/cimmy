@@ -51,12 +51,11 @@ export class DockerodeRunner implements DockerRunner {
         Tmpfs: {
           "/tmp": "rw,exec,nosuid,size=512m",
         },
-        // Writable work/out via anonymous volumes
+        // Single workspace volume: /work/repo (clone) + /work/out (harvest).
         Binds: [],
       },
       Volumes: {
         "/work": {},
-        "/out": {},
       },
     });
 
@@ -126,7 +125,7 @@ export class DockerodeRunner implements DockerRunner {
 
     let stream: NodeJS.ReadableStream;
     try {
-      stream = await container.getArchive({ path: "/out" });
+      stream = await container.getArchive({ path: "/work/out" });
     } catch {
       return files;
     }
@@ -139,8 +138,11 @@ export class DockerodeRunner implements DockerRunner {
       });
       entryStream.on("end", () => {
         if (header.type === "file") {
-          // tar path like "out/report.md" or "./report.md"
-          const name = header.name.replace(/^(\.\/)?out\//, "").replace(/^\.\//, "");
+          // tar paths like "out/report.md", "work/out/report.md", or "./report.md"
+          const name = header.name
+            .replace(/^\.\//, "")
+            .replace(/^work\/out\//, "")
+            .replace(/^out\//, "");
           if (name && !name.endsWith("/") && path.basename(name) !== ".env") {
             files.push({ name, data: Buffer.concat(chunks) });
           }

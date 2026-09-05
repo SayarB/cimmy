@@ -18,6 +18,8 @@ describe("entrypoint invoke flags", () => {
       assert.doesNotMatch(line, /--force\b/);
       assert.doesNotMatch(line, /--yolo\b/);
     }
-    assert.match(src, /agent -p --trust --workspace/);
+    assert.match(src, /agent -p --trust --workspace "\$WORK_ROOT"/);
+    assert.match(src, /OUT_DIR="\/work\/out"/);
+    assert.match(src, /WORK_ROOT="\/work"/);
   });
 });

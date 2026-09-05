@@ -18,7 +18,7 @@ RUN curl -fsS https://cursor.com/install | bash \
 COPY fixtures/sample-repo /opt/cimmy/fixture
 COPY docker/cursor-runtime/entrypoint.sh /usr/local/bin/cimmy-entrypoint.sh
 RUN chmod +x /usr/local/bin/cimmy-entrypoint.sh \
-  && mkdir -p /work /out
+  && mkdir -p /work/repo /work/out
 
 ENV PATH="/root/.local/bin:${PATH}"
 

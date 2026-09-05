@@ -35,7 +35,7 @@ outputs:
 ### Body guidance
 
 - Tell the agent what to analyze and what “good” looks like
-- Instruct writing the final report under `/out/<outputs.report>`
+- Instruct writing the final report under `/work/out/<outputs.report>`
 - Do not ask the agent to `git push` or open PRs in v1
 - Do not embed secrets; secrets come from Cimmy `.env` injection later
 

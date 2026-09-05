@@ -1,16 +1,20 @@
 #!/usr/bin/env bash
 # Cimmy cursor-runtime entrypoint.
+# Layout (agent --workspace /work):
+#   /work/repo  — cloned (or fixture) repository
+#   /work/out   — harvested artifacts (report, meta, transcript)
 # Fixture: CIMMY_FIXTURE=1 — baked-in sample repo.
 # Clone: CIMMY_CLONE_URL + CIMMY_GITHUB_TOKEN (+ optional CIMMY_CLONE_REF).
 # Stub: CIMMY_AGENT_STUB=1 writes report/transcript without Cursor CLI.
 set -euo pipefail
 
 RUN_ID="${CIMMY_RUN_ID:-unknown}"
-OUT_DIR="/out"
+WORK_ROOT="/work"
 WORK_REPO="/work/repo"
+OUT_DIR="/work/out"
 FIXTURE_SRC="/opt/cimmy/fixture"
 
-mkdir -p "$OUT_DIR" /work /tmp
+mkdir -p "$OUT_DIR" "$WORK_ROOT" /tmp
 rm -rf "$WORK_REPO"
 
 if [[ "${CIMMY_FIXTURE:-}" == "1" ]]; then
@@ -52,7 +56,7 @@ SKILL_IDS=()
 RAN_ANY=0
 UNSUPPORTED=0
 
-PREAMBLE=$'You are running inside Cimmy cursor-runtime.\nWrite the final report only under /out.\nDo not print .env or secrets.\nDo not attempt git push.\n\n'
+PREAMBLE=$'You are running inside Cimmy cursor-runtime.\nWorkspace root is /work. The repository is at /work/repo.\nWrite the final report only under /work/out (e.g. /work/out/report.md).\nDo not print .env or secrets.\nDo not attempt git push.\n\n'
 
 for skill_dir in "${SKILL_DIRS[@]+"${SKILL_DIRS[@]}"}"; do
   skill_file="$skill_dir/SKILL.md"
@@ -96,7 +100,8 @@ EOF
       echo "agent CLI not found; set CIMMY_AGENT_STUB=1" >&2
       exit 4
     fi
-    agent -p --trust --workspace "$WORK_REPO" --output-format stream-json \
+    # Workspace is /work so /work/out is in-tree for Write tools (no --force).
+    agent -p --trust --workspace "$WORK_ROOT" --output-format stream-json \
       "$prompt" | tee -a "$OUT_DIR/transcript.stream.json"
     if [[ ! -f "$OUT_DIR/$report_name" ]]; then
       echo "Agent did not write $OUT_DIR/$report_name" >&2

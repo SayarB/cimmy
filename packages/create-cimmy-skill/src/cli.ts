@@ -41,7 +41,7 @@ async function main() {
       schedule,
       body: `Review recent changes in this repository.
 Focus on correctness bugs, security issues, and broken invariants.
-Write a concise report to the configured /out report path.
+Write a concise report to the configured /work/out report path.
 If nothing material, say so explicitly.`,
     });
     await fs.writeFile(file, body, "utf8");
