@@ -129,32 +129,54 @@ function inlineMd(s: string): string {
   return out;
 }
 
-/** Turn Severity/Where/Issue labels into scannable fields + severity chips. */
+/** Turn Severity/Where/Issue labels into block field rows + severity chips. */
 function decorateInline(html: string): string {
   let out = html;
 
   out = out.replace(
     /<strong>Severity:<\/strong>\s*(high|medium|low)/gi,
-    (_m, sev: string) => {
-      const s = sev.toLowerCase();
-      return `<span class="md-field"><span class="md-field-label">Severity</span><span class="md-sev md-sev-${s}">${s}</span></span>`;
-    },
+    (_m, sev: string) => `{{FIELD:Severity:SEV:${sev.toLowerCase()}}}`,
   );
-
   out = out.replace(
-    /<strong>(Where|Issue|Why it matters|Suggestion):<\/strong>/gi,
-    (_m, label: string) =>
-      `<span class="md-field"><span class="md-field-label">${escapeHtml(label)}</span></span>`,
+    /<strong>(Where|Issue|Why it matters|Suggestion):<\/strong>\s*/gi,
+    (_m, label: string) => `{{FIELD:${label}}}`,
   );
 
-  // Break before each field so walls of text become rows.
-  out = out.replace(/(?<!^)(?<!<br \/>\n)(<span class="md-field">)/g, "<br />\n$1");
+  if (!out.includes("{{FIELD:")) {
+    return out;
+  }
 
-  // Soft-break after a bold title at the start of a finding ("**Title.** Severity…")
-  out = out.replace(
-    /^(<strong>[^<]+<\/strong>)(\s*)(<br \/>|<span class="md-field">)/,
-    "$1<br />\n$3",
-  );
+  const parts = out.split("{{FIELD:");
+  const chunks: string[] = [];
+  const title = (parts[0] ?? "")
+    .replace(/(?:<br\s*\/?>|\s)*$/g, "")
+    .replace(/\s*[-–—]\s*$/u, "")
+    .trim();
+  if (title) {
+    chunks.push(`<div class="md-finding-head">${title}</div>`);
+  }
 
-  return out;
+  for (let i = 1; i < parts.length; i++) {
+    const part = parts[i]!;
+    const sevMatch = /^Severity:SEV:(high|medium|low)\}\}([\s\S]*)$/i.exec(part);
+    if (sevMatch) {
+      const sev = sevMatch[1]!.toLowerCase();
+      chunks.push(
+        `<div class="md-field-row md-field-sev"><span class="md-field-label">Severity</span><span class="md-sev md-sev-${sev}">${sev}</span></div>`,
+      );
+      continue;
+    }
+    const m = /^([^}]+)\}\}([\s\S]*)$/.exec(part);
+    if (!m) continue;
+    const label = m[1]!;
+    const body = m[2]!
+      .replace(/^(?:<br\s*\/?>|\s|[-–—])+/gu, "")
+      .replace(/(?:<br\s*\/?>|\s)*$/g, "")
+      .trim();
+    chunks.push(
+      `<div class="md-field-row"><span class="md-field-label">${escapeHtml(label)}</span><div class="md-field-body">${body || "—"}</div></div>`,
+    );
+  }
+
+  return chunks.join("\n");
 }

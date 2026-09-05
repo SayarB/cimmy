@@ -31,7 +31,9 @@ describe("renderMarkdown", () => {
     const html = renderMarkdown(src);
     assert.match(html, /md-sev md-sev-high/);
     assert.match(html, /md-field-label">Severity/);
-    assert.match(html, /md-field-label">Where/);
+    assert.match(html, /md-field-row/);
+    assert.match(html, /md-field-body/);
+    assert.match(html, /md-finding-head/);
     assert.match(html, /md-finding/);
   });
 });

@@ -1,5 +1,5 @@
 /** Design tokens from docs/Design.md — served at /assets/app.css */
-export const APP_CSS_VERSION = "20260905e";
+export const APP_CSS_VERSION = "20260905f";
 export const APP_CSS = `/* Cimmy — docs/Design.md (typography from pi.dev) */
 @import url("https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;0,8..60,700;1,8..60,400;1,8..60,600&display=swap");
 
@@ -345,15 +345,15 @@ pre.report, pre.transcript, pre.meta {
 
 .md-preview {
   margin: 0;
-  padding: 1.35rem 1.5rem 1.6rem;
+  padding: 1.5rem 1.65rem 1.85rem;
   background: var(--bg-elevated);
   border: 1px solid #3a3c3b;
   max-height: 70vh;
   overflow: auto;
   font-family: var(--serif);
-  font-size: 1.02rem;
-  line-height: 1.65;
-  color: var(--text);
+  font-size: 0.98rem;
+  line-height: 1.75;
+  color: rgba(232, 232, 230, 0.72);
 }
 .md-preview > *:first-child { margin-top: 0; }
 .md-preview > *:last-child { margin-bottom: 0; }
@@ -361,171 +361,211 @@ pre.report, pre.transcript, pre.meta {
 .md-preview h1.md-title {
   font-family: var(--serif);
   font-weight: 600;
-  font-size: 1.65rem;
+  font-size: 1.55rem;
   letter-spacing: -0.02em;
-  line-height: 1.2;
-  margin: 0 0 1rem;
-  padding-bottom: 0.65rem;
+  line-height: 1.25;
+  margin: 0 0 1.15rem;
+  padding-bottom: 0.85rem;
   border-bottom: 1px solid #3a3c3b;
-  color: var(--text);
+  color: rgba(232, 232, 230, 0.92);
 }
 .md-preview h2.md-section {
   font-family: var(--accent-mono);
   font-weight: 400;
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--accent);
-  margin: 1.75rem 0 0.85rem;
+  margin: 2.1rem 0 1rem;
   padding: 0;
   border: 0;
 }
 .md-preview h3.md-finding-title {
   font-family: var(--serif);
   font-weight: 600;
-  font-size: 1.12rem;
-  line-height: 1.3;
-  margin: 1.35rem 0 0.55rem;
+  font-size: 1.08rem;
+  line-height: 1.35;
+  margin: 1.6rem 0 0.75rem;
   padding-left: 0.75rem;
   border-left: 2px solid var(--accent);
-  color: var(--text);
+  color: rgba(232, 232, 230, 0.9);
 }
 
 .md-preview p {
-  margin: 0.7em 0;
-  color: color-mix(in srgb, var(--text) 92%, transparent);
+  margin: 0.85em 0;
+  color: rgba(232, 232, 230, 0.68);
 }
 .md-preview strong {
-  color: var(--text);
+  color: rgba(232, 232, 230, 0.88);
   font-weight: 600;
 }
 .md-preview em {
-  color: color-mix(in srgb, var(--text) 85%, var(--accent));
+  color: rgba(232, 232, 230, 0.75);
 }
 
 .md-preview ul.md-bullets,
 .md-preview ol.md-findings {
-  margin: 0.85rem 0 1rem;
+  margin: 0.5rem 0 0.25rem;
   padding: 0;
   list-style: none;
   counter-reset: finding;
 }
 .md-preview ul.md-bullets > li {
   position: relative;
-  margin: 0.45rem 0;
-  padding-left: 1.1rem;
-  color: color-mix(in srgb, var(--text) 90%, transparent);
+  margin: 0.65rem 0;
+  padding-left: 1.15rem;
+  color: rgba(232, 232, 230, 0.7);
+  line-height: 1.7;
 }
 .md-preview ul.md-bullets > li::before {
   content: "";
   position: absolute;
   left: 0;
-  top: 0.55em;
-  width: 6px;
-  height: 6px;
-  background: var(--accent);
+  top: 0.65em;
+  width: 5px;
+  height: 5px;
+  background: color-mix(in srgb, var(--accent) 70%, transparent);
 }
 
 .md-preview ol.md-findings > li {
   counter-increment: finding;
-  margin: 0 0 0.85rem;
-  padding: 0.95rem 1rem 1rem 1.1rem;
-  background: color-mix(in srgb, var(--bg) 72%, var(--bg-elevated));
-  border: 1px solid #343636;
-  border-left: 3px solid color-mix(in srgb, var(--accent) 55%, #343636);
+  display: block;
+  margin: 0 0 1.25rem;
+  padding: 1.15rem 1.2rem 1.25rem;
+  background: rgba(12, 12, 14, 0.55);
+  border: 1px solid #2f3130;
+  border-left: 3px solid color-mix(in srgb, var(--accent) 40%, #2f3130);
+}
+.md-preview ol.md-findings > li:last-child {
+  margin-bottom: 0.25rem;
 }
 .md-preview ol.md-findings > li:has(.md-sev-high) {
-  border-left-color: var(--danger);
+  border-left-color: color-mix(in srgb, var(--danger) 75%, #2f3130);
 }
 .md-preview ol.md-findings > li:has(.md-sev-medium) {
-  border-left-color: var(--warn);
+  border-left-color: color-mix(in srgb, var(--warn) 75%, #2f3130);
 }
 .md-preview ol.md-findings > li:has(.md-sev-low) {
-  border-left-color: var(--accent);
+  border-left-color: color-mix(in srgb, var(--accent) 65%, #2f3130);
 }
 .md-preview ol.md-findings > li::before {
   content: counter(finding);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 1.35rem;
-  height: 1.35rem;
-  margin: 0 0.55rem 0.35rem 0;
-  padding: 0 0.3rem;
-  border: 1px solid #3a3c3b;
-  background: var(--bg);
-  color: var(--accent);
+  min-width: 1.4rem;
+  height: 1.4rem;
+  margin: 0 0.65rem 0.85rem 0;
+  padding: 0 0.35rem;
+  border: 1px solid #343636;
+  background: rgba(18, 18, 18, 0.9);
+  color: color-mix(in srgb, var(--accent) 85%, #fff);
   font-family: var(--accent-mono);
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   letter-spacing: 0.04em;
   vertical-align: middle;
 }
 
+.md-preview .md-finding-head {
+  display: block;
+  margin: 0 0 1rem;
+  font-family: var(--serif);
+  font-size: 1.06rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: rgba(232, 232, 230, 0.9);
+}
+.md-preview .md-finding-head strong {
+  color: inherit;
+  font-weight: 600;
+}
+
+.md-preview .md-field-row {
+  display: block;
+  margin: 0 0 0.95rem;
+  padding: 0;
+}
+.md-preview .md-field-row:last-child {
+  margin-bottom: 0;
+}
 .md-preview .md-field-label {
-  display: inline-block;
-  margin-right: 0.45rem;
+  display: block;
+  margin: 0 0 0.35rem;
   font-family: var(--accent-mono);
-  font-size: 0.66rem;
-  letter-spacing: 0.12em;
+  font-size: 0.64rem;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--text-muted);
-  vertical-align: baseline;
+  color: rgba(232, 232, 230, 0.38);
+}
+.md-preview .md-field-body {
+  display: block;
+  margin: 0;
+  color: rgba(232, 232, 230, 0.68);
+  line-height: 1.7;
+}
+.md-preview .md-field-sev {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 1.05rem;
+}
+.md-preview .md-field-sev .md-field-label {
+  display: inline-block;
+  margin: 0;
 }
 .md-preview .md-sev {
   display: inline-block;
-  margin: 0.15rem 0.15rem 0.15rem 0;
-  padding: 0.12rem 0.45rem;
+  padding: 0.18rem 0.5rem;
   border: 1px solid transparent;
   font-family: var(--accent-mono);
-  font-size: 0.66rem;
+  font-size: 0.64rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  vertical-align: baseline;
 }
 .md-preview .md-sev-high {
-  color: #ffd0d0;
-  background: color-mix(in srgb, var(--danger) 22%, transparent);
-  border-color: color-mix(in srgb, var(--danger) 55%, transparent);
+  color: #f0b4b4;
+  background: color-mix(in srgb, var(--danger) 16%, transparent);
+  border-color: color-mix(in srgb, var(--danger) 40%, transparent);
 }
 .md-preview .md-sev-medium {
-  color: #ffe0d4;
-  background: color-mix(in srgb, var(--warn) 20%, transparent);
-  border-color: color-mix(in srgb, var(--warn) 50%, transparent);
+  color: #efc4b0;
+  background: color-mix(in srgb, var(--warn) 14%, transparent);
+  border-color: color-mix(in srgb, var(--warn) 38%, transparent);
 }
 .md-preview .md-sev-low {
-  color: #c8ffe8;
-  background: color-mix(in srgb, var(--accent) 16%, transparent);
-  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  color: #a8e6cc;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 32%, transparent);
 }
 
 .md-preview blockquote {
-  margin: 0.9em 0;
-  padding: 0.55rem 0 0.55rem 0.9rem;
-  border-left: 2px solid var(--accent);
-  color: var(--text-muted);
-  background: color-mix(in srgb, var(--bg) 55%, transparent);
+  margin: 1em 0;
+  padding: 0.7rem 0 0.7rem 1rem;
+  border-left: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  color: rgba(232, 232, 230, 0.55);
+  background: rgba(12, 12, 14, 0.35);
 }
 .md-preview hr {
   border: 0;
-  border-top: 1px solid #3a3c3b;
-  margin: 1.5em 0;
+  border-top: 1px solid #2f3130;
+  margin: 1.75em 0;
 }
 .md-preview a {
-  color: var(--accent);
+  color: color-mix(in srgb, var(--accent) 85%, #fff);
   text-decoration: underline;
-  text-underline-offset: 2px;
+  text-underline-offset: 3px;
 }
 .md-preview :not(pre) > code {
   font-family: var(--mono);
-  font-size: 0.84em;
-  color: #b8f5d8;
-  background: color-mix(in srgb, var(--accent) 8%, var(--bg));
-  padding: 0.12em 0.38em;
-  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--border));
+  font-size: 0.82em;
+  color: #9fdcc0;
+  background: rgba(62, 235, 163, 0.06);
+  padding: 0.15em 0.4em;
+  border: 1px solid rgba(62, 235, 163, 0.14);
 }
 .md-preview .md-snippet {
-  margin: 0.95em 0;
-  border: 1px solid #3a3c3b;
+  margin: 1.1em 0;
+  border: 1px solid #2f3130;
   background: #0a0a0b;
   overflow: hidden;
 }
@@ -534,20 +574,20 @@ pre.report, pre.transcript, pre.meta {
 .md-preview .md-snippet-bar {
   display: flex;
   align-items: center;
-  padding: 0.45rem 0.9rem;
-  border-bottom: 1px solid #2f3130;
-  background: #141416;
+  padding: 0.5rem 0.95rem;
+  border-bottom: 1px solid #2a2c2b;
+  background: #121214;
 }
 .md-preview .md-snippet-lang {
   font-family: var(--accent-mono);
-  font-size: 0.66rem;
+  font-size: 0.64rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--text-muted);
+  color: rgba(232, 232, 230, 0.4);
 }
 .md-preview pre.md-code {
   margin: 0;
-  padding: 1rem 1.05rem;
+  padding: 1.05rem 1.1rem;
   background: transparent;
   border: 0;
   overflow: auto;
@@ -561,25 +601,39 @@ pre.report, pre.transcript, pre.meta {
   padding: 0 !important;
   font-family: var(--mono);
   font-size: 0.84rem;
-  line-height: 1.55;
+  line-height: 1.6;
   white-space: pre;
-  color: #e6e6e2;
+  color: rgba(230, 230, 226, 0.82);
   tab-size: 2;
 }
 
 html[data-ground="paper"] .md-preview {
   border-color: #cfcfc8;
+  color: rgba(18, 18, 18, 0.72);
 }
 html[data-ground="paper"] .md-preview h1.md-title {
   border-bottom-color: #cfcfc8;
+  color: rgba(18, 18, 18, 0.92);
+}
+html[data-ground="paper"] .md-preview p,
+html[data-ground="paper"] .md-preview .md-field-body,
+html[data-ground="paper"] .md-preview ul.md-bullets > li {
+  color: rgba(18, 18, 18, 0.72);
+}
+html[data-ground="paper"] .md-preview .md-finding-head,
+html[data-ground="paper"] .md-preview strong {
+  color: rgba(18, 18, 18, 0.9);
+}
+html[data-ground="paper"] .md-preview .md-field-label {
+  color: rgba(18, 18, 18, 0.42);
 }
 html[data-ground="paper"] .md-preview :not(pre) > code {
   color: #0a5c45;
-  background: color-mix(in srgb, var(--accent) 10%, #fff);
-  border-color: color-mix(in srgb, var(--accent) 25%, var(--border));
+  background: color-mix(in srgb, var(--accent) 8%, #fff);
+  border-color: color-mix(in srgb, var(--accent) 18%, var(--border));
 }
 html[data-ground="paper"] .md-preview ol.md-findings > li {
-  background: #f6f6f2;
+  background: #f4f4f0;
   border-color: #d8d8d0;
 }
 html[data-ground="paper"] .md-preview .md-sev-high {
@@ -600,7 +654,7 @@ html[data-ground="paper"] .md-preview .md-snippet-bar {
   border-bottom-color: #d8d8d0;
 }
 html[data-ground="paper"] .md-preview pre.md-code code {
-  color: var(--text);
+  color: rgba(18, 18, 18, 0.82);
 }
 
 .tx-preview {
