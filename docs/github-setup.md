@@ -79,6 +79,12 @@ pnpm --filter @cimmy/create-skill cli -- init daily-review --name "Daily review"
 - DNS `cimmy.sayar.one` → VPS
 - Docker socket for run containers
 - Same GitHub App env vars as above + `CIMMY_PUBLIC_URL=https://cimmy.sayar.one`
+- Compose builds `cimmy-cursor-runtime:local` (service `cursor-runtime`). If runs fail with `No such image: cimmy-cursor-runtime:local`, rebuild once on the host:
+
+```bash
+cd /path/to/cimmy   # Dokploy code dir
+docker build -t cimmy-cursor-runtime:local -f docker/cursor-runtime/Dockerfile .
+```
 
 ## Later (`mode: pr`)
 

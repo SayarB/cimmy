@@ -13,6 +13,16 @@ services:
       timeout: 5s
       retries: 20
 
+  # Built on the host daemon so platform (docker.sock) can start ephemeral runs.
+  # Container exits immediately; only the image tag matters.
+  cursor-runtime:
+    build:
+      context: .
+      dockerfile: docker/cursor-runtime/Dockerfile
+    image: cimmy-cursor-runtime:local
+    entrypoint: ["true"]
+    restart: "no"
+
   platform:
     build:
       context: .
@@ -51,6 +61,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      cursor-runtime:
+        condition: service_completed_successfully
 
 volumes:
   cimmy_pg:
