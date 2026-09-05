@@ -1,4 +1,5 @@
 /** Design tokens from docs/Design.md — served at /assets/app.css */
+export const APP_CSS_VERSION = "20260905b";
 export const APP_CSS = `/* Cimmy — docs/Design.md (typography from pi.dev) */
 @import url("https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;0,8..60,700;1,8..60,400;1,8..60,600&display=swap");
 
@@ -171,10 +172,18 @@ h1 {
   font-size: 0.84em;
 }
 
-code {
+/* Inline chips only — never style multi-line <pre><code> as chips (paints per line). */
+:not(pre) > code {
   background: var(--bg-elevated);
   border: 1px solid var(--border);
   padding: 0.1rem 0.35rem;
+}
+pre code {
+  display: block;
+  background: none;
+  border: 0;
+  padding: 0;
+  font-size: inherit;
 }
 
 .btn {
@@ -338,9 +347,7 @@ pre.report, pre.transcript, pre.meta {
   margin: 0;
   padding: 1.25rem 1.35rem;
   background: var(--bg-elevated);
-  border: 1px solid color-mix(in srgb, var(--text) 18%, var(--border));
-  outline: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
-  outline-offset: 0;
+  border: 1px solid #3a3c3b;
   max-height: 70vh;
   overflow: auto;
   font-family: var(--serif);
@@ -383,27 +390,27 @@ pre.report, pre.transcript, pre.meta {
   text-decoration: underline;
   text-underline-offset: 2px;
 }
-.md-preview code {
+.md-preview :not(pre) > code {
   font-family: var(--mono);
   font-size: 0.86em;
-  background: color-mix(in srgb, var(--bg) 70%, transparent);
+  background: var(--bg);
   padding: 0.1em 0.3em;
   border: 1px solid var(--border);
 }
 .md-preview .md-snippet {
   margin: 0.85em 0;
-  border: 1px solid color-mix(in srgb, var(--text) 16%, var(--border));
-  background: #0c0c0e;
+  border: 1px solid #3a3c3b;
+  background: #0a0a0b;
   overflow: hidden;
 }
+.md-preview .md-snippet:first-child { margin-top: 0; }
+.md-preview .md-snippet:last-child { margin-bottom: 0; }
 .md-preview .md-snippet-bar {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
-  gap: 0.5rem;
-  padding: 0.4rem 0.85rem;
-  border-bottom: 1px solid color-mix(in srgb, var(--text) 12%, var(--border));
-  background: color-mix(in srgb, var(--bg-elevated) 70%, #0c0c0e);
+  padding: 0.45rem 0.9rem;
+  border-bottom: 1px solid #2f3130;
+  background: #141416;
 }
 .md-preview .md-snippet-lang {
   font-family: var(--accent-mono);
@@ -414,18 +421,18 @@ pre.report, pre.transcript, pre.meta {
 }
 .md-preview pre.md-code {
   margin: 0;
-  padding: 0.95rem 1.05rem;
+  padding: 1rem 1.05rem;
   background: transparent;
   border: 0;
   overflow: auto;
   max-height: none;
+  white-space: pre;
 }
-.md-preview pre.md-code code,
-.md-preview .md-snippet code {
+.md-preview pre.md-code code {
   display: block;
-  background: none;
-  border: 0;
-  padding: 0;
+  background: none !important;
+  border: 0 !important;
+  padding: 0 !important;
   font-family: var(--mono);
   font-size: 0.84rem;
   line-height: 1.55;
@@ -434,14 +441,18 @@ pre.report, pre.transcript, pre.meta {
   tab-size: 2;
 }
 
+html[data-ground="paper"] .md-preview {
+  border-color: #cfcfc8;
+}
 html[data-ground="paper"] .md-preview .md-snippet {
-  background: #f3f3ef;
+  background: #f4f4f0;
+  border-color: #cfcfc8;
 }
 html[data-ground="paper"] .md-preview .md-snippet-bar {
-  background: color-mix(in srgb, var(--bg-elevated) 80%, #ecece6);
+  background: #ecece6;
+  border-bottom-color: #d8d8d0;
 }
-html[data-ground="paper"] .md-preview pre.md-code code,
-html[data-ground="paper"] .md-preview .md-snippet code {
+html[data-ground="paper"] .md-preview pre.md-code code {
   color: var(--text);
 }
 

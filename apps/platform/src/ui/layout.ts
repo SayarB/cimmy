@@ -1,5 +1,6 @@
 import { html, raw } from "hono/html";
 import type { HtmlEscapedString } from "hono/utils/html";
+import { APP_CSS_VERSION } from "./styles.js";
 
 export function escapeHtml(s: string): string {
   return s
@@ -31,7 +32,7 @@ export function shellPage(opts: ShellOpts) {
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#121212" />
   <title>${escapeHtml(opts.title)} · Cimmy</title>
-  <link rel="stylesheet" href="/assets/app.css" />
+  <link rel="stylesheet" href="/assets/app.css?v=${APP_CSS_VERSION}" />
   <script>
     (function () {
       try {
@@ -116,7 +117,7 @@ export function authPage(opts: {
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#091c1e" />
   <title>${escapeHtml(opts.title)} · Cimmy</title>
-  <link rel="stylesheet" href="/assets/app.css" />
+  <link rel="stylesheet" href="/assets/app.css?v=${APP_CSS_VERSION}" />
   <script>
     (function () {
       try {

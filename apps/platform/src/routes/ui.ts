@@ -11,7 +11,7 @@ import { authProviders } from "../auth/auth.js";
 import type { AuthVars } from "../auth/session.js";
 import { authPage, escapeHtml, shellPage } from "../ui/layout.js";
 import { renderMarkdown } from "../ui/markdown.js";
-import { APP_CSS } from "../ui/styles.js";
+import { APP_CSS, APP_CSS_VERSION } from "../ui/styles.js";
 import { statusGlyph, statusLabel } from "../ui/status.js";
 
 const FONTS_DIR = path.resolve(
@@ -67,7 +67,7 @@ export function uiRoutes(deps: AppDeps) {
   app.get("/assets/app.css", (c) => {
     return c.body(APP_CSS, 200, {
       "content-type": "text/css; charset=utf-8",
-      "cache-control": "public, max-age=3600",
+      "cache-control": "no-cache",
     });
   });
 
