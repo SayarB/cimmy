@@ -1,0 +1,56 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: cimmy
+      POSTGRES_PASSWORD: cimmy
+      POSTGRES_DB: cimmy
+    volumes:
+      - cimmy_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cimmy -d cimmy"]
+      interval: 2s
+      timeout: 5s
+      retries: 20
+
+  platform:
+    build:
+      context: .
+      dockerfile: docker/platform/Dockerfile
+    ports:
+      - "13000:3000"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgres://cimmy:cimmy@postgres:5432/cimmy
+      PORT: "3000"
+      CIMMY_PUBLIC_URL: ${CIMMY_PUBLIC_URL:-http://127.0.0.1:13000}
+      CIMMY_ENABLE_FIXTURE_ROUTES: "1"
+      CIMMY_RUNTIME_IMAGE: cimmy-cursor-runtime:local
+      CIMMY_ARTIFACTS_DIR: /data/artifacts
+      CIMMY_AGENT_STUB: ${CIMMY_AGENT_STUB:-1}
+      CIMMY_DOCKER_NETWORK: bridge
+      GITHUB_APP_ID: ${GITHUB_APP_ID:-}
+      GITHUB_APP_PRIVATE_KEY: ${GITHUB_APP_PRIVATE_KEY:-}
+      GITHUB_APP_SLUG: ${GITHUB_APP_SLUG:-}
+      GITHUB_WEBHOOK_SECRET: ${GITHUB_WEBHOOK_SECRET:-}
+      CIMMY_AUTH_SECRET: ${CIMMY_AUTH_SECRET:-dev-only-cimmy-auth-secret-change-me}
+      CIMMY_ALLOW_SIGNUP: ${CIMMY_ALLOW_SIGNUP:-1}
+      GITHUB_OAUTH_CLIENT_ID: ${GITHUB_OAUTH_CLIENT_ID:-}
+      GITHUB_OAUTH_CLIENT_SECRET: ${GITHUB_OAUTH_CLIENT_SECRET:-}
+      GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID:-}
+      GOOGLE_OAUTH_CLIENT_SECRET: ${GOOGLE_OAUTH_CLIENT_SECRET:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      CIMMY_AUTH_EMAIL_FROM: ${CIMMY_AUTH_EMAIL_FROM:-}
+      CURSOR_API_KEY: ${CURSOR_API_KEY:-}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - cimmy_artifacts:/data/artifacts
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  cimmy_pg:
+  cimmy_artifacts:
