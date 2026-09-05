@@ -8,11 +8,15 @@ export function renderMarkdown(src: string): string {
   const fences: string[] = [];
   let text = src.replace(/\r\n/g, "\n");
 
-  text = text.replace(/```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g, (_m, lang: string, code: string) => {
+  text = text.replace(/```([a-zA-Z0-9_-]*)[ \t]*\n([\s\S]*?)\n?[ \t]*```/g, (_m, lang: string, code: string) => {
     const i = fences.length;
-    const langAttr = lang ? ` class="language-${escapeHtml(lang)}"` : "";
+    const langLabel = lang ? escapeHtml(lang) : "";
+    const langAttr = lang ? ` class="language-${langLabel}"` : "";
+    const bar = langLabel
+      ? `<div class="md-snippet-bar"><span class="md-snippet-lang">${langLabel}</span></div>`
+      : "";
     fences.push(
-      `<pre class="md-code"><code${langAttr}>${escapeHtml(code.replace(/\n$/, ""))}</code></pre>`,
+      `<div class="md-snippet">${bar}<pre class="md-code"><code${langAttr}>${escapeHtml(code.replace(/\n$/, ""))}</code></pre></div>`,
     );
     return `\n\n@@FENCE${i}@@\n\n`;
   });

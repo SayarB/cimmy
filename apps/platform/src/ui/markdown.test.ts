@@ -6,6 +6,8 @@ describe("renderMarkdown", () => {
   it("renders fenced typescript as code", () => {
     const src = "```typescript\nexport function ingestJobKey(jobId: string): string {\n  return `syraa:ingest:job:${jobId}`;\n}\n```\n";
     const html = renderMarkdown(src);
+    assert.match(html, /<div class="md-snippet">/);
+    assert.match(html, /<span class="md-snippet-lang">typescript<\/span>/);
     assert.match(html, /<pre class="md-code"><code class="language-typescript">/);
     assert.match(html, /export function ingestJobKey/);
     assert.doesNotMatch(html, /<script/);

@@ -336,9 +336,11 @@ pre.report, pre.transcript, pre.meta {
 
 .md-preview {
   margin: 0;
-  padding: 1.1rem 1.25rem;
+  padding: 1.25rem 1.35rem;
   background: var(--bg-elevated);
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in srgb, var(--text) 18%, var(--border));
+  outline: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  outline-offset: 0;
   max-height: 70vh;
   overflow: auto;
   font-family: var(--serif);
@@ -388,21 +390,58 @@ pre.report, pre.transcript, pre.meta {
   padding: 0.1em 0.3em;
   border: 1px solid var(--border);
 }
+.md-preview .md-snippet {
+  margin: 0.85em 0;
+  border: 1px solid color-mix(in srgb, var(--text) 16%, var(--border));
+  background: #0c0c0e;
+  overflow: hidden;
+}
+.md-preview .md-snippet-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.5rem;
+  padding: 0.4rem 0.85rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--text) 12%, var(--border));
+  background: color-mix(in srgb, var(--bg-elevated) 70%, #0c0c0e);
+}
+.md-preview .md-snippet-lang {
+  font-family: var(--accent-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
 .md-preview pre.md-code {
-  margin: 0.9em 0;
-  padding: 0.9rem 1rem;
-  background: var(--bg);
-  border: 1px solid var(--border);
+  margin: 0;
+  padding: 0.95rem 1.05rem;
+  background: transparent;
+  border: 0;
   overflow: auto;
   max-height: none;
 }
-.md-preview pre.md-code code {
+.md-preview pre.md-code code,
+.md-preview .md-snippet code {
+  display: block;
   background: none;
   border: 0;
   padding: 0;
+  font-family: var(--mono);
   font-size: 0.84rem;
-  line-height: 1.5;
+  line-height: 1.55;
   white-space: pre;
+  color: #e6e6e2;
+  tab-size: 2;
+}
+
+html[data-ground="paper"] .md-preview .md-snippet {
+  background: #f3f3ef;
+}
+html[data-ground="paper"] .md-preview .md-snippet-bar {
+  background: color-mix(in srgb, var(--bg-elevated) 80%, #ecece6);
+}
+html[data-ground="paper"] .md-preview pre.md-code code,
+html[data-ground="paper"] .md-preview .md-snippet code {
   color: var(--text);
 }
 
