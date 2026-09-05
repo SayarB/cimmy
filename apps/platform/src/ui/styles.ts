@@ -1,5 +1,5 @@
 /** Design tokens from docs/Design.md — served at /assets/app.css */
-export const APP_CSS_VERSION = "20260905b";
+export const APP_CSS_VERSION = "20260905c";
 export const APP_CSS = `/* Cimmy — docs/Design.md (typography from pi.dev) */
 @import url("https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;0,8..60,700;1,8..60,400;1,8..60,600&display=swap");
 
@@ -454,6 +454,81 @@ html[data-ground="paper"] .md-preview .md-snippet-bar {
 }
 html[data-ground="paper"] .md-preview pre.md-code code {
   color: var(--text);
+}
+
+.tx-preview {
+  margin: 0;
+  padding: 0.35rem 0;
+  background: var(--bg-elevated);
+  border: 1px solid #3a3c3b;
+  max-height: 70vh;
+  overflow: auto;
+}
+.tx-log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.tx-log > li {
+  padding: 0.75rem 1.1rem;
+  border-bottom: 1px solid var(--border);
+}
+.tx-log > li:last-child { border-bottom: 0; }
+.tx-label {
+  display: inline-block;
+  font-family: var(--accent-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 0.35rem;
+}
+.tx-status {
+  float: right;
+  font-family: var(--accent-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.tx-tool.tx-ok .tx-status { color: var(--accent); }
+.tx-tool.tx-rejected .tx-status,
+.tx-tool.tx-error .tx-status,
+.tx-result.tx-error .tx-status { color: var(--danger); }
+.tx-body {
+  margin: 0.35rem 0 0;
+  font-family: var(--serif);
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.tx-thinking .tx-body {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  background: none;
+  border: 0;
+  padding: 0;
+  max-height: none;
+  overflow: visible;
+}
+.tx-meta .tx-body {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+.tx-tool .tx-body {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+.tx-result.tx-ok {
+  border-left: 2px solid var(--accent);
+}
+.tx-result.tx-error {
+  border-left: 2px solid var(--danger);
 }
 
 .auth-page {

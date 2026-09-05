@@ -13,6 +13,7 @@ import { authPage, escapeHtml, shellPage } from "../ui/layout.js";
 import { renderMarkdown } from "../ui/markdown.js";
 import { APP_CSS, APP_CSS_VERSION } from "../ui/styles.js";
 import { statusGlyph, statusLabel } from "../ui/status.js";
+import { renderTranscriptHtml } from "../ui/transcript.js";
 
 const FONTS_DIR = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -395,25 +396,35 @@ export function uiRoutes(deps: AppDeps) {
     }
 
     const skillLabel = Array.isArray(run.skillIds) ? run.skillIds.join(", ") : "";
-    const preClass = activeTab === "report" ? "report" : activeTab === "transcript" ? "transcript" : "meta";
-    const reportView =
-      activeTab === "report"
-        ? (() => {
-            const view = (c.req.query("view") || "preview").toLowerCase();
-            const activeView = view === "source" ? "source" : "preview";
-            const previewHtml = renderMarkdown(panelText);
-            return html`
+    const view = (c.req.query("view") || "preview").toLowerCase();
+    const activeView = view === "source" ? "source" : "preview";
+
+    let panel;
+    if (activeTab === "report") {
+      panel = html`
       <div class="view-toggle" role="group" aria-label="Report view">
         <a href="/runs/${id}?tab=report&view=preview" class="btn btn-secondary" ${activeView === "preview" ? raw('aria-current="page"') : raw("")}>Preview</a>
         <a href="/runs/${id}?tab=report&view=source" class="btn btn-secondary" ${activeView === "source" ? raw('aria-current="page"') : raw("")}>Source</a>
       </div>
       ${
         activeView === "preview"
-          ? html`<article class="md-preview report-preview">${raw(previewHtml)}</article>`
-          : html`<pre class="report">${escapeHtml(panelText)}</pre>`
+          ? html`<article class="md-preview report-preview">${raw(renderMarkdown(panelText))}</article>`
+          : html`<pre class="report">${raw(escapeHtml(panelText))}</pre>`
       }`;
-          })()
-        : html`<pre class="${preClass}">${escapeHtml(panelText)}</pre>`;
+    } else if (activeTab === "transcript") {
+      panel = html`
+      <div class="view-toggle" role="group" aria-label="Transcript view">
+        <a href="/runs/${id}?tab=transcript&view=preview" class="btn btn-secondary" ${activeView === "preview" ? raw('aria-current="page"') : raw("")}>Preview</a>
+        <a href="/runs/${id}?tab=transcript&view=source" class="btn btn-secondary" ${activeView === "source" ? raw('aria-current="page"') : raw("")}>Source</a>
+      </div>
+      ${
+        activeView === "preview"
+          ? html`<div class="tx-preview">${raw(renderTranscriptHtml(panelText))}</div>`
+          : html`<pre class="transcript">${raw(escapeHtml(panelText))}</pre>`
+      }`;
+    } else {
+      panel = html`<pre class="meta">${raw(escapeHtml(panelText))}</pre>`;
+    }
 
     const body = html`
       <p class="section-label">Run</p>
@@ -437,7 +448,7 @@ export function uiRoutes(deps: AppDeps) {
         <a class="btn btn-secondary" href="/api/runs/${id}">JSON</a>
       </p>
 
-      ${reportView}
+      ${panel}
 
       ${
         ["queued", "running", "starting", "pending"].includes(run.status)
