@@ -29,9 +29,22 @@ Create **one** GitHub App for production. Same App on Mac (register installation
 GITHUB_APP_ID=…
 GITHUB_APP_SLUG=…
 GITHUB_WEBHOOK_SECRET=…
+# Prefer base64 on Dokploy (multiline PEM breaks their .env writer):
+# ./scripts/pem-to-env-line.sh ~/Downloads/*.pem --b64
+GITHUB_APP_PRIVATE_KEY_B64="…"
+# Or single-line with literal \n (must be ONE line, no real line breaks):
 # ./scripts/pem-to-env-line.sh ~/Downloads/*.pem
-GITHUB_APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\n…\n-----END RSA PRIVATE KEY-----\n"
+# GITHUB_APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\n…\n-----END RSA PRIVATE KEY-----\n"
 ```
+
+### Dokploy note
+
+Dokploy’s compose env editor **drops quotes on multiline values**, which produces errors like `unexpected character "+" in variable name`. Do **not** paste a multi-line PEM.
+
+1. On your Mac: `./scripts/pem-to-env-line.sh path/to/app.pem --b64`
+2. In Dokploy: delete any broken `GITHUB_APP_PRIVATE_KEY=…` / bare PEM lines
+3. Add only `GITHUB_APP_PRIVATE_KEY_B64="…"` (one line)
+4. Redeploy (or remove `/etc/dokploy/compose/.../code/.env` and redeploy)
 
 On the **VPS**, also set:
 

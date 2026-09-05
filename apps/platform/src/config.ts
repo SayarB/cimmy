@@ -36,7 +36,12 @@ export function getConfig(env: NodeJS.ProcessEnv = process.env): Config {
     throw new Error("DATABASE_URL is required");
   }
 
-  const privateKey = env.GITHUB_APP_PRIVATE_KEY?.replace(/\\n/g, "\n");
+  const privateKeyRaw = env.GITHUB_APP_PRIVATE_KEY?.replace(/\\n/g, "\n");
+  const privateKeyB64 = env.GITHUB_APP_PRIVATE_KEY_B64?.trim();
+  let privateKey = privateKeyRaw;
+  if (!privateKey && privateKeyB64) {
+    privateKey = Buffer.from(privateKeyB64, "base64").toString("utf8");
+  }
   const authSecret =
     env.CIMMY_AUTH_SECRET ?? "dev-only-cimmy-auth-secret-change-me";
 
