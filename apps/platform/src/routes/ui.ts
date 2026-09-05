@@ -511,12 +511,6 @@ export function uiRoutes(deps: AppDeps) {
         <a href="/runs/${id}?tab=meta" ${activeTab === "meta" ? raw('aria-current="page"') : raw("")}>Meta</a>
       </nav>
 
-      <p class="row" style="margin-bottom:0.75rem">
-        <a class="btn btn-secondary" href="/api/runs/${id}/artifacts/report">Raw report</a>
-        <a class="btn btn-secondary" href="/api/runs/${id}/artifacts/transcript">Raw transcript</a>
-        <a class="btn btn-secondary" href="/api/runs/${id}">JSON</a>
-      </p>
-
       ${panel}
 
       ${
