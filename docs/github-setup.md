@@ -73,12 +73,29 @@ pnpm --filter @cimmy/create-skill cli -- init daily-review --name "Daily review"
 # commit .cimmy/ on the target repo and push
 ```
 
+### Real agent vs stub
+
+| Goal | Env |
+|------|-----|
+| Smoke / no Cursor bill | `CIMMY_AGENT_STUB=1` (writes a fake report) |
+| Actually run the skill | `CIMMY_AGENT_STUB=0` + `CURSOR_API_KEY=<key from Cursor dashboard>` |
+
+The runtime image installs the Cursor `agent` CLI. Platform injects `CURSOR_API_KEY` into each run container (not into the image).
+
+After changing those env vars on the VPS: redeploy platform, then rebuild the runtime image if it was built before agent install landed:
+
+```bash
+cd /etc/dokploy/compose/cimmy-ftplec/code
+docker build -t cimmy-cursor-runtime:local -f docker/cursor-runtime/Dockerfile .
+```
+
 ## 4. VPS checklist
 
 - HTTPS → `platform:3000` (Caddy/Traefik/nginx)
 - DNS `cimmy.sayar.one` → VPS
 - Docker socket for run containers
 - Same GitHub App env vars as above + `CIMMY_PUBLIC_URL=https://cimmy.sayar.one`
+- For real skills: `CIMMY_AGENT_STUB=0` + `CURSOR_API_KEY`
 - Compose builds `cimmy-cursor-runtime:local` (service `cursor-runtime`). If runs fail with `No such image: cimmy-cursor-runtime:local`, rebuild once on the host:
 
 ```bash

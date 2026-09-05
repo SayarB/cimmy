@@ -47,8 +47,9 @@ export class DockerodeRunner implements DockerRunner {
         AutoRemove: false,
         CapDrop: ["ALL"],
         NetworkMode: spec.network,
+        // Agent CLI may unpack helpers under /tmp; keep exec + enough space.
         Tmpfs: {
-          "/tmp": "rw,noexec,nosuid,size=64m",
+          "/tmp": "rw,exec,nosuid,size=512m",
         },
         // Writable work/out via anonymous volumes
         Binds: [],
