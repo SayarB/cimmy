@@ -1,5 +1,5 @@
 /** Design tokens from docs/Design.md — served at /assets/app.css */
-export const APP_CSS_VERSION = "20260905c";
+export const APP_CSS_VERSION = "20260905d";
 export const APP_CSS = `/* Cimmy — docs/Design.md (typography from pi.dev) */
 @import url("https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;0,8..60,700;1,8..60,400;1,8..60,600&display=swap");
 
@@ -529,6 +529,38 @@ html[data-ground="paper"] .md-preview pre.md-code code {
 }
 .tx-result.tx-error {
   border-left: 2px solid var(--danger);
+}
+
+.flash {
+  margin-top: 1rem;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  font-family: var(--mono);
+  font-size: 0.84rem;
+  color: var(--text);
+}
+.flash-error {
+  border-color: color-mix(in srgb, var(--danger) 50%, var(--border));
+  color: var(--danger);
+}
+
+.repo-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  margin-top: 2rem;
+}
+.repo-toolbar .section-label { margin: 0; }
+#repo-search {
+  flex: 1 1 16rem;
+  min-width: 12rem;
+  max-width: 28rem;
+}
+.connect-hero {
+  margin-top: 1rem;
 }
 
 .auth-page {

@@ -64,7 +64,7 @@ export function githubRoutes(deps: AppDeps) {
       });
     }
 
-    return c.redirect(`/connect?installed=${encodeURIComponent(installationId)}`);
+    return c.redirect("/connect?connected=1");
   });
 
   /** Dev/manual: register an installation id you already created on GitHub. */
@@ -119,6 +119,59 @@ export function githubRoutes(deps: AppDeps) {
     });
   });
 
+  /** All repos across registered installations (for Connect UI). */
+  app.get("/api/github/repos", async (c) => {
+    if (!githubConfigured(deps.config)) {
+      return c.json({ error: "GitHub App not configured" }, 503);
+    }
+    const installations = await deps.db.select().from(githubInstallations);
+    const active = installations.filter((i) => i.suspended !== 1);
+    const enrolled = await deps.db.select().from(enrolledRepos);
+    const enrolledByGithubId = new Map(
+      enrolled.filter((r) => r.githubRepoId).map((r) => [String(r.githubRepoId), r]),
+    );
+    const enrolledByName = new Map(enrolled.map((r) => [r.fullName.toLowerCase(), r]));
+
+    const repos: Array<{
+      id: number | string;
+      fullName: string;
+      defaultBranch: string;
+      private: boolean;
+      accountLogin: string | null;
+      installationId: string;
+      enrolled: boolean;
+      enrolledId: string | null;
+    }> = [];
+
+    for (const inst of active) {
+      const listed = await listInstallationRepos(deps.config, inst.installationId);
+      for (const repo of listed) {
+        const byId = enrolledByGithubId.get(String(repo.id));
+        const byName = enrolledByName.get(repo.fullName.toLowerCase());
+        const match = byId ?? byName ?? null;
+        repos.push({
+          id: repo.id,
+          fullName: repo.fullName,
+          defaultBranch: repo.defaultBranch,
+          private: Boolean(repo.private),
+          accountLogin: inst.accountLogin,
+          installationId: inst.installationId,
+          enrolled: Boolean(match && match.enabled === 1),
+          enrolledId: match?.id ?? null,
+        });
+      }
+    }
+
+    repos.sort((a, b) => a.fullName.localeCompare(b.fullName));
+    return c.json({
+      accounts: active.map((i) => ({
+        login: i.accountLogin,
+        type: i.accountType,
+      })),
+      repos,
+    });
+  });
+
   app.get("/api/github/installations/:installationId/repos", async (c) => {
     if (!githubConfigured(deps.config)) {
       return c.json({ error: "GitHub App not configured" }, 503);
@@ -138,17 +191,40 @@ export function githubRoutes(deps: AppDeps) {
       full_name?: string;
       default_branch?: string;
     };
-    if (!body.installation_id || !body.full_name || body.github_repo_id == null) {
-      return c.json({ error: "installation_id, github_repo_id, full_name required" }, 400);
+    if (!body.full_name || body.github_repo_id == null) {
+      return c.json({ error: "github_repo_id and full_name required" }, 400);
+    }
+
+    let installationId = body.installation_id ? String(body.installation_id) : "";
+    if (!installationId) {
+      const installations = (await deps.db.select().from(githubInstallations)).filter(
+        (i) => i.suspended !== 1,
+      );
+      for (const inst of installations) {
+        const listed = await listInstallationRepos(deps.config, inst.installationId);
+        if (
+          listed.some(
+            (r) =>
+              String(r.id) === String(body.github_repo_id) ||
+              r.fullName.toLowerCase() === body.full_name!.toLowerCase(),
+          )
+        ) {
+          installationId = inst.installationId;
+          break;
+        }
+      }
+    }
+    if (!installationId) {
+      return c.json({ error: "repo not found on any connected GitHub account" }, 404);
     }
 
     const inst = await deps.db
       .select()
       .from(githubInstallations)
-      .where(eq(githubInstallations.installationId, body.installation_id))
+      .where(eq(githubInstallations.installationId, installationId))
       .limit(1);
     if (!inst[0] || inst[0].suspended === 1) {
-      return c.json({ error: "installation not registered or suspended" }, 400);
+      return c.json({ error: "GitHub account not connected" }, 400);
     }
 
     const orgId = inst[0].orgId;
@@ -162,7 +238,7 @@ export function githubRoutes(deps: AppDeps) {
       const [updated] = await deps.db
         .update(enrolledRepos)
         .set({
-          installationId: body.installation_id,
+          installationId,
           githubRepoId: String(body.github_repo_id),
           defaultBranch: body.default_branch ?? existing[0].defaultBranch,
           enabled: 1,
@@ -176,7 +252,7 @@ export function githubRoutes(deps: AppDeps) {
       .insert(enrolledRepos)
       .values({
         orgId,
-        installationId: body.installation_id,
+        installationId,
         githubRepoId: String(body.github_repo_id),
         fullName: body.full_name,
         defaultBranch: body.default_branch ?? "main",
@@ -185,6 +261,18 @@ export function githubRoutes(deps: AppDeps) {
       .returning();
 
     return c.json({ repo }, 201);
+  });
+
+  app.post("/api/repos/:id/disable", async (c) => {
+    const id = c.req.param("id");
+    const rows = await deps.db.select().from(enrolledRepos).where(eq(enrolledRepos.id, id)).limit(1);
+    if (!rows[0]) return c.json({ error: "not found" }, 404);
+    const [updated] = await deps.db
+      .update(enrolledRepos)
+      .set({ enabled: 0 })
+      .where(eq(enrolledRepos.id, id))
+      .returning();
+    return c.json({ repo: updated });
   });
 
   app.get("/api/repos", async (c) => {

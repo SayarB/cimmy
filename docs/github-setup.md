@@ -57,13 +57,19 @@ CIMMY_ALLOW_SIGNUP=0
 Sign in to the UI first ([auth-setup](auth-setup.md)); GitHub App remains for clone only.
 Mac local compose can keep `CIMMY_PUBLIC_URL=http://127.0.0.1:13000` for UI links — **do not** change the GitHub App URLs to localhost.
 
-## 2. Mac: same App, manual install id
+## 2. Connect in the UI
 
-1. Install: `https://github.com/apps/<slug>/installations/new`
-2. Copy installation id from the URL / App installations page
-3. Local UI → **Register installation id** → List repos → Enroll → Run now
+On production (`cimmy.sayar.one`):
 
-When prod is live, installs also land via webhook/callback on `cimmy.sayar.one`.
+1. Sign in → **Connect** → **Connect GitHub**
+2. Install the App and grant repos
+3. You’re redirected back; search and **Enroll** repos (no installation IDs in the UI)
+
+### Mac local (callback hits prod)
+
+If the App’s callback URL is production, a local Mac install still lands on prod. After installing on GitHub, either use the production UI, or register the installation once via API for local smoke:
+
+`POST /api/github/installations` with `{ "installation_id": "…" }` (ops only — not shown in the product UI).
 
 ## 3. Skill + run
 

@@ -102,7 +102,11 @@ export function uiRoutes(deps: AppDeps) {
 
   app.get("/", async (c) => {
     const user = c.get("user");
-    const repos = await deps.db.select().from(enrolledRepos).orderBy(enrolledRepos.fullName);
+    const repos = await deps.db
+      .select()
+      .from(enrolledRepos)
+      .where(eq(enrolledRepos.enabled, 1))
+      .orderBy(enrolledRepos.fullName);
     const recent = await deps.db.select().from(runs).orderBy(desc(runs.createdAt)).limit(20);
     const repoById = new Map(repos.map((r) => [r.id, r]));
 
@@ -114,7 +118,7 @@ export function uiRoutes(deps: AppDeps) {
     const body = html`
       <p class="section-label">Repos</p>
       <h1>Enrolled</h1>
-      <p class="muted">Run skills in ephemeral containers. GitHub App still owns clone access.</p>
+      <p class="muted">Run skills on enrolled repos. Connect GitHub to add more.</p>
 
       ${
         repos.length === 0
@@ -203,131 +207,196 @@ export function uiRoutes(deps: AppDeps) {
   app.get("/connect", async (c) => {
     const user = c.get("user");
     const configured = githubConfigured(deps.config);
-    const installed = c.req.query("installed");
+    const connected = c.req.query("connected") === "1" || Boolean(c.req.query("installed"));
+    const manageUrl = configured
+      ? `https://github.com/apps/${encodeURIComponent(deps.config.githubAppSlug!)}/installations/select_target`
+      : null;
 
     const body = html`
       <p class="section-label">Connect</p>
-      <h1>GitHub App</h1>
-      <p class="muted">Cimmy uses a GitHub App for repo clone — not your login password.</p>
+      <h1>GitHub</h1>
+      <p class="muted">Install the Cimmy GitHub App, then enroll repos to run skills.</p>
 
-      <div class="panel">
-        <p>Status: <strong>${configured ? "configured" : "not configured"}</strong></p>
-        <p class="muted mono">callback ${escapeHtml(deps.config.publicUrl)}/api/github/callback</p>
-        ${
-          installed
-            ? html`<p class="status status-done">Registered installation <code>${escapeHtml(installed)}</code></p>`
-            : raw("")
-        }
-        <div class="row" style="margin-top:0.75rem">
-          ${
-            configured
-              ? html`<a class="btn" href="/api/github/install">Install / Connect</a>`
-              : html`<p class="muted">Set <code>GITHUB_APP_ID</code>, <code>GITHUB_APP_PRIVATE_KEY</code>, <code>GITHUB_APP_SLUG</code>.</p>`
-          }
-        </div>
-        <div class="row" style="margin-top:0.75rem">
-          <input id="manual-install-id" class="mono" placeholder="installation id" />
-          <button class="btn btn-secondary" type="button" id="btn-register">Register id</button>
+      ${
+        connected
+          ? html`<p class="status status-done"><span aria-hidden="true">●</span> GitHub connected — pick repos below.</p>`
+          : raw("")
+      }
+
+      <div class="panel connect-hero">
+        <div class="row" style="justify-content:space-between;width:100%">
+          <div>
+            <p style="margin:0"><strong>${configured ? "App ready" : "App not configured"}</strong></p>
+            <p class="muted" style="margin:0.35rem 0 0" id="connect-accounts">Checking connected accounts…</p>
+          </div>
+          <div class="row">
+            ${
+              configured
+                ? html`
+                    <a class="btn" href="/api/github/install">Connect GitHub</a>
+                    ${manageUrl ? html`<a class="btn btn-secondary" href="${manageUrl}" target="_blank" rel="noopener">Manage access</a>` : raw("")}
+                  `
+                : html`<p class="muted" style="margin:0">Set GitHub App env vars on the server.</p>`
+            }
+          </div>
         </div>
       </div>
 
-      <p class="section-label" style="margin-top:2rem">Installations</p>
-      <ul class="list" id="installations"><li class="muted">Loading…</li></ul>
-
-      <p class="section-label" style="margin-top:2rem">Repos</p>
-      <div class="row">
-        <input id="repos-install-id" class="mono" placeholder="installation id" />
-        <button class="btn btn-secondary" type="button" id="btn-list-repos">List repos</button>
+      <div class="repo-toolbar">
+        <p class="section-label" style="margin:0">Repositories</p>
+        <input id="repo-search" type="search" placeholder="Search repositories…" autocomplete="off" />
       </div>
-      <ul class="list" id="repos"></ul>
-
-      <p class="section-label" style="margin-top:2rem">Log</p>
-      <pre class="meta" id="connect-out">—</pre>
+      <p class="muted" id="repo-status" style="margin:0.5rem 0 0.75rem">Loading repositories…</p>
+      <ul class="list" id="repo-list"></ul>
+      <p class="flash" id="connect-flash" hidden></p>
 
       <script>
         (function () {
+          var allRepos = [];
+          var flashEl = document.getElementById("connect-flash");
+          var statusEl = document.getElementById("repo-status");
+          var listEl = document.getElementById("repo-list");
+          var searchEl = document.getElementById("repo-search");
+          var accountsEl = document.getElementById("connect-accounts");
+
           async function j(url, opts) {
-            const r = await fetch(url, { credentials: "include", ...opts });
-            const text = await r.text();
-            let data;
-            try { data = JSON.parse(text); } catch { data = text; }
-            return { ok: r.ok, status: r.status, data };
+            var r = await fetch(url, Object.assign({ credentials: "include" }, opts || {}));
+            var text = await r.text();
+            var data;
+            try { data = JSON.parse(text); } catch (e) { data = { error: text }; }
+            return { ok: r.ok, status: r.status, data: data };
           }
-          function out(data) {
-            document.getElementById("connect-out").textContent =
-              typeof data === "string" ? data : JSON.stringify(data, null, 2);
+
+          function flash(msg, isError) {
+            flashEl.hidden = false;
+            flashEl.textContent = msg;
+            flashEl.className = "flash" + (isError ? " flash-error" : "");
+            clearTimeout(flashEl._t);
+            flashEl._t = setTimeout(function () { flashEl.hidden = true; }, 4000);
           }
-          async function refreshInstallations() {
-            const { data } = await j("/api/github/installations");
-            const ul = document.getElementById("installations");
-            ul.innerHTML = "";
-            const list = data.installations || [];
-            if (!list.length) {
-              ul.innerHTML = '<li class="muted">None registered yet.</li>';
+
+          function filtered() {
+            var q = (searchEl.value || "").trim().toLowerCase();
+            if (!q) return allRepos.slice();
+            return allRepos.filter(function (r) {
+              return String(r.fullName).toLowerCase().indexOf(q) !== -1
+                || String(r.accountLogin || "").toLowerCase().indexOf(q) !== -1;
+            });
+          }
+
+          function render() {
+            var rows = filtered();
+            listEl.innerHTML = "";
+            if (!allRepos.length) {
+              statusEl.textContent = "No repositories yet. Connect GitHub and grant repo access.";
               return;
             }
-            for (const i of list) {
-              const li = document.createElement("li");
-              const meta = document.createElement("div");
-              meta.className = "list-meta";
-              meta.innerHTML = "<strong class=\\"mono\\">" + (i.account_login || "(unknown)") + "</strong>"
-                + "<span class=\\"muted mono\\">" + i.installation_id + "</span>";
-              const b = document.createElement("button");
-              b.className = "btn btn-secondary";
-              b.type = "button";
-              b.textContent = "Use";
-              b.onclick = function () {
-                document.getElementById("repos-install-id").value = i.installation_id;
-              };
-              li.appendChild(meta);
-              li.appendChild(b);
-              ul.appendChild(li);
+            statusEl.textContent = rows.length + " of " + allRepos.length + " repositories"
+              + (searchEl.value.trim() ? " matching “" + searchEl.value.trim() + "”" : "");
+            if (!rows.length) {
+              listEl.innerHTML = '<li class="muted">No matches.</li>';
+              return;
             }
-          }
-          document.getElementById("btn-register").onclick = async function () {
-            const installation_id = document.getElementById("manual-install-id").value.trim();
-            const res = await j("/api/github/installations", {
-              method: "POST",
-              headers: { "content-type": "application/json" },
-              body: JSON.stringify({ installation_id }),
+            rows.forEach(function (repo) {
+              var li = document.createElement("li");
+              var meta = document.createElement("div");
+              meta.className = "list-meta";
+              var title = document.createElement("strong");
+              title.className = "mono";
+              title.textContent = repo.fullName;
+              var sub = document.createElement("span");
+              sub.className = "muted";
+              var bits = [];
+              if (repo.private) bits.push("private");
+              else bits.push("public");
+              if (repo.defaultBranch) bits.push(repo.defaultBranch);
+              if (repo.enrolled) bits.push("enrolled");
+              sub.textContent = bits.join(" · ");
+              meta.appendChild(title);
+              meta.appendChild(sub);
+
+              var actions = document.createElement("div");
+              actions.className = "row";
+              if (repo.enrolled) {
+                var open = document.createElement("a");
+                open.className = "btn btn-secondary";
+                open.href = "/";
+                open.textContent = "Open";
+                var remove = document.createElement("button");
+                remove.type = "button";
+                remove.className = "btn btn-secondary";
+                remove.textContent = "Remove";
+                remove.onclick = async function () {
+                  remove.disabled = true;
+                  var res = await j("/api/repos/" + encodeURIComponent(repo.enrolledId) + "/disable", {
+                    method: "POST",
+                    headers: { "content-type": "application/json" },
+                    body: "{}",
+                  });
+                  if (!res.ok) {
+                    flash((res.data && res.data.error) || "Could not remove", true);
+                    remove.disabled = false;
+                    return;
+                  }
+                  flash("Removed " + repo.fullName);
+                  await loadRepos();
+                };
+                actions.appendChild(open);
+                actions.appendChild(remove);
+              } else {
+                var enroll = document.createElement("button");
+                enroll.type = "button";
+                enroll.className = "btn";
+                enroll.textContent = "Enroll";
+                enroll.onclick = async function () {
+                  enroll.disabled = true;
+                  var res = await j("/api/repos/enroll", {
+                    method: "POST",
+                    headers: { "content-type": "application/json" },
+                    body: JSON.stringify({
+                      installation_id: repo.installationId,
+                      github_repo_id: repo.id,
+                      full_name: repo.fullName,
+                      default_branch: repo.defaultBranch,
+                    }),
+                  });
+                  if (!res.ok) {
+                    flash((res.data && res.data.error) || "Enroll failed", true);
+                    enroll.disabled = false;
+                    return;
+                  }
+                  flash("Enrolled " + repo.fullName);
+                  await loadRepos();
+                };
+                actions.appendChild(enroll);
+              }
+
+              li.appendChild(meta);
+              li.appendChild(actions);
+              listEl.appendChild(li);
             });
-            out(res.data);
-            await refreshInstallations();
-          };
-          document.getElementById("btn-list-repos").onclick = async function () {
-            const id = document.getElementById("repos-install-id").value.trim();
-            const res = await j("/api/github/installations/" + encodeURIComponent(id) + "/repos");
-            out(res.data);
-            const ul = document.getElementById("repos");
-            ul.innerHTML = "";
-            for (const repo of (res.data.repos || [])) {
-              const li = document.createElement("li");
-              const meta = document.createElement("div");
-              meta.className = "list-meta";
-              meta.innerHTML = "<strong class=\\"mono\\">" + repo.fullName + "</strong>";
-              const b = document.createElement("button");
-              b.className = "btn";
-              b.type = "button";
-              b.textContent = "Enroll";
-              b.onclick = async function () {
-                const enroll = await j("/api/repos/enroll", {
-                  method: "POST",
-                  headers: { "content-type": "application/json" },
-                  body: JSON.stringify({
-                    installation_id: id,
-                    github_repo_id: repo.id,
-                    full_name: repo.fullName,
-                    default_branch: repo.defaultBranch,
-                  }),
-                });
-                out(enroll.data);
-              };
-              li.appendChild(meta);
-              li.appendChild(b);
-              ul.appendChild(li);
+          }
+
+          async function loadRepos() {
+            statusEl.textContent = "Loading repositories…";
+            var res = await j("/api/github/repos");
+            if (!res.ok) {
+              accountsEl.textContent = "Not connected";
+              statusEl.textContent = (res.data && res.data.error) || "Could not load repositories";
+              allRepos = [];
+              listEl.innerHTML = "";
+              return;
             }
-          };
-          refreshInstallations();
+            allRepos = res.data.repos || [];
+            var accounts = (res.data.accounts || []).map(function (a) { return a.login; }).filter(Boolean);
+            accountsEl.textContent = accounts.length
+              ? ("Connected: " + accounts.join(", "))
+              : "No GitHub account connected yet";
+            render();
+          }
+
+          searchEl.addEventListener("input", render);
+          loadRepos();
         })();
       </script>
     `;
