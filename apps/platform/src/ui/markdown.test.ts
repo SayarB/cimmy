@@ -20,8 +20,18 @@ describe("renderMarkdown", () => {
   });
 
   it("renders headings and bold", () => {
-    const html = renderMarkdown("## Title\n\n**bold** text");
-    assert.match(html, /<h2>Title<\/h2>/);
+    const html = renderMarkdown("## Summary\n\n**bold** text");
+    assert.match(html, /<h2 class="md-section">Summary<\/h2>/);
     assert.match(html, /<strong>bold<\/strong>/);
+  });
+
+  it("renders severity badges and field labels", () => {
+    const src =
+      "1. **AuthZ gap on status reads.** **Severity:** high **Where:** `server.ts` **Issue:** no user check **Suggestion:** scope by userId";
+    const html = renderMarkdown(src);
+    assert.match(html, /md-sev md-sev-high/);
+    assert.match(html, /md-field-label">Severity/);
+    assert.match(html, /md-field-label">Where/);
+    assert.match(html, /md-finding/);
   });
 });

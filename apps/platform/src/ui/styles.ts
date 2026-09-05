@@ -1,5 +1,5 @@
 /** Design tokens from docs/Design.md — served at /assets/app.css */
-export const APP_CSS_VERSION = "20260905d";
+export const APP_CSS_VERSION = "20260905e";
 export const APP_CSS = `/* Cimmy — docs/Design.md (typography from pi.dev) */
 @import url("https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;0,8..60,700;1,8..60,400;1,8..60,600&display=swap");
 
@@ -345,45 +345,170 @@ pre.report, pre.transcript, pre.meta {
 
 .md-preview {
   margin: 0;
-  padding: 1.25rem 1.35rem;
+  padding: 1.35rem 1.5rem 1.6rem;
   background: var(--bg-elevated);
   border: 1px solid #3a3c3b;
   max-height: 70vh;
   overflow: auto;
   font-family: var(--serif);
-  font-size: 1rem;
-  line-height: 1.6;
+  font-size: 1.02rem;
+  line-height: 1.65;
   color: var(--text);
 }
 .md-preview > *:first-child { margin-top: 0; }
 .md-preview > *:last-child { margin-bottom: 0; }
-.md-preview h1,
-.md-preview h2,
-.md-preview h3 {
+
+.md-preview h1.md-title {
   font-family: var(--serif);
   font-weight: 600;
-  line-height: 1.25;
-  margin: 1.25em 0 0.5em;
+  font-size: 1.65rem;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  margin: 0 0 1rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid #3a3c3b;
+  color: var(--text);
 }
-.md-preview h1 { font-size: 1.45rem; }
-.md-preview h2 { font-size: 1.2rem; }
-.md-preview h3 { font-size: 1.05rem; }
-.md-preview p { margin: 0.75em 0; }
-.md-preview ul, .md-preview ol {
-  margin: 0.75em 0;
-  padding-left: 1.35rem;
+.md-preview h2.md-section {
+  font-family: var(--accent-mono);
+  font-weight: 400;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 1.75rem 0 0.85rem;
+  padding: 0;
+  border: 0;
 }
-.md-preview li { margin: 0.25em 0; }
-.md-preview blockquote {
-  margin: 0.75em 0;
-  padding-left: 0.85rem;
-  border-left: 2px solid var(--border);
+.md-preview h3.md-finding-title {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 1.12rem;
+  line-height: 1.3;
+  margin: 1.35rem 0 0.55rem;
+  padding-left: 0.75rem;
+  border-left: 2px solid var(--accent);
+  color: var(--text);
+}
+
+.md-preview p {
+  margin: 0.7em 0;
+  color: color-mix(in srgb, var(--text) 92%, transparent);
+}
+.md-preview strong {
+  color: var(--text);
+  font-weight: 600;
+}
+.md-preview em {
+  color: color-mix(in srgb, var(--text) 85%, var(--accent));
+}
+
+.md-preview ul.md-bullets,
+.md-preview ol.md-findings {
+  margin: 0.85rem 0 1rem;
+  padding: 0;
+  list-style: none;
+  counter-reset: finding;
+}
+.md-preview ul.md-bullets > li {
+  position: relative;
+  margin: 0.45rem 0;
+  padding-left: 1.1rem;
+  color: color-mix(in srgb, var(--text) 90%, transparent);
+}
+.md-preview ul.md-bullets > li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.55em;
+  width: 6px;
+  height: 6px;
+  background: var(--accent);
+}
+
+.md-preview ol.md-findings > li {
+  counter-increment: finding;
+  margin: 0 0 0.85rem;
+  padding: 0.95rem 1rem 1rem 1.1rem;
+  background: color-mix(in srgb, var(--bg) 72%, var(--bg-elevated));
+  border: 1px solid #343636;
+  border-left: 3px solid color-mix(in srgb, var(--accent) 55%, #343636);
+}
+.md-preview ol.md-findings > li:has(.md-sev-high) {
+  border-left-color: var(--danger);
+}
+.md-preview ol.md-findings > li:has(.md-sev-medium) {
+  border-left-color: var(--warn);
+}
+.md-preview ol.md-findings > li:has(.md-sev-low) {
+  border-left-color: var(--accent);
+}
+.md-preview ol.md-findings > li::before {
+  content: counter(finding);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.35rem;
+  height: 1.35rem;
+  margin: 0 0.55rem 0.35rem 0;
+  padding: 0 0.3rem;
+  border: 1px solid #3a3c3b;
+  background: var(--bg);
+  color: var(--accent);
+  font-family: var(--accent-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  vertical-align: middle;
+}
+
+.md-preview .md-field-label {
+  display: inline-block;
+  margin-right: 0.45rem;
+  font-family: var(--accent-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
   color: var(--text-muted);
+  vertical-align: baseline;
+}
+.md-preview .md-sev {
+  display: inline-block;
+  margin: 0.15rem 0.15rem 0.15rem 0;
+  padding: 0.12rem 0.45rem;
+  border: 1px solid transparent;
+  font-family: var(--accent-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  vertical-align: baseline;
+}
+.md-preview .md-sev-high {
+  color: #ffd0d0;
+  background: color-mix(in srgb, var(--danger) 22%, transparent);
+  border-color: color-mix(in srgb, var(--danger) 55%, transparent);
+}
+.md-preview .md-sev-medium {
+  color: #ffe0d4;
+  background: color-mix(in srgb, var(--warn) 20%, transparent);
+  border-color: color-mix(in srgb, var(--warn) 50%, transparent);
+}
+.md-preview .md-sev-low {
+  color: #c8ffe8;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.md-preview blockquote {
+  margin: 0.9em 0;
+  padding: 0.55rem 0 0.55rem 0.9rem;
+  border-left: 2px solid var(--accent);
+  color: var(--text-muted);
+  background: color-mix(in srgb, var(--bg) 55%, transparent);
 }
 .md-preview hr {
   border: 0;
-  border-top: 1px solid var(--border);
-  margin: 1.25em 0;
+  border-top: 1px solid #3a3c3b;
+  margin: 1.5em 0;
 }
 .md-preview a {
   color: var(--accent);
@@ -392,13 +517,14 @@ pre.report, pre.transcript, pre.meta {
 }
 .md-preview :not(pre) > code {
   font-family: var(--mono);
-  font-size: 0.86em;
-  background: var(--bg);
-  padding: 0.1em 0.3em;
-  border: 1px solid var(--border);
+  font-size: 0.84em;
+  color: #b8f5d8;
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg));
+  padding: 0.12em 0.38em;
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--border));
 }
 .md-preview .md-snippet {
-  margin: 0.85em 0;
+  margin: 0.95em 0;
   border: 1px solid #3a3c3b;
   background: #0a0a0b;
   overflow: hidden;
@@ -443,6 +569,27 @@ pre.report, pre.transcript, pre.meta {
 
 html[data-ground="paper"] .md-preview {
   border-color: #cfcfc8;
+}
+html[data-ground="paper"] .md-preview h1.md-title {
+  border-bottom-color: #cfcfc8;
+}
+html[data-ground="paper"] .md-preview :not(pre) > code {
+  color: #0a5c45;
+  background: color-mix(in srgb, var(--accent) 10%, #fff);
+  border-color: color-mix(in srgb, var(--accent) 25%, var(--border));
+}
+html[data-ground="paper"] .md-preview ol.md-findings > li {
+  background: #f6f6f2;
+  border-color: #d8d8d0;
+}
+html[data-ground="paper"] .md-preview .md-sev-high {
+  color: #8a1f1f;
+}
+html[data-ground="paper"] .md-preview .md-sev-medium {
+  color: #8a3d1f;
+}
+html[data-ground="paper"] .md-preview .md-sev-low {
+  color: #0a5c45;
 }
 html[data-ground="paper"] .md-preview .md-snippet {
   background: #f4f4f0;
