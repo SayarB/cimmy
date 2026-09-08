@@ -19,7 +19,6 @@ export type Config = {
   githubAppPrivateKey: string | undefined;
   githubAppSlug: string | undefined;
   githubWebhookSecret: string | undefined;
-  defaultOrgName: string;
   authSecret: string;
   allowSignup: boolean;
   githubOauthClientId: string | undefined;
@@ -60,7 +59,6 @@ export function getConfig(env: NodeJS.ProcessEnv = process.env): Config {
     githubAppPrivateKey: privateKey,
     githubAppSlug: env.GITHUB_APP_SLUG,
     githubWebhookSecret: env.GITHUB_WEBHOOK_SECRET,
-    defaultOrgName: env.CIMMY_DEFAULT_ORG_NAME ?? "local",
     authSecret,
     allowSignup: env.CIMMY_ALLOW_SIGNUP !== "0",
     githubOauthClientId: env.GITHUB_OAUTH_CLIENT_ID,

@@ -32,6 +32,22 @@ Register these on each OAuth provider (must match `CIMMY_PUBLIC_URL`):
 
 Same with `CIMMY_PUBLIC_URL=https://cimmy.sayar.one`, strong `CIMMY_AUTH_SECRET`, and OAuth callbacks on that host. Prefer Resend for magic links in production.
 
+## Organizations
+
+Every user gets **their own organization**, created automatically on first sign-in (OAuth or magic link). One user per org today; `org_members` is a join table, so multiple users per org later is a new row rather than a migration.
+
+Everything a user can see is scoped through that membership: enrolled repos, runs, artifacts and GitHub installations. A request for another org's run or artifact returns **404**, not 403 — the route does not confirm that the id exists.
+
+There is no longer a deployment-wide default org; `CIMMY_DEFAULT_ORG_NAME` has been removed.
+
+### Connecting GitHub
+
+An installation is attached to an org by the **authenticated** callback (`/api/github/callback`). The `installation` webhook has no session, so it cannot know whose org a new installation belongs to and therefore does **not** create rows — it only handles suspend / unsuspend / delete for installations that already exist. If you install the App from GitHub's directory instead of through Cimmy, it will not be listed until you open the **Connect** page, which creates it under your org.
+
+### Upgrading an existing deployment
+
+Migration backfills `org_members`, attaching each pre-existing organization to the earliest-created user so nothing is orphaned. On a deployment that had the old `local` org, that user inherits the existing repos and runs.
+
 ## Public vs gated
 
 | Path | Auth |
@@ -39,7 +55,7 @@ Same with `CIMMY_PUBLIC_URL=https://cimmy.sayar.one`, strong `CIMMY_AUTH_SECRET`
 | `/health` | public |
 | `/api/auth/*` | public |
 | `/api/github/webhook` | public (signature still required) |
-| `/internal/*` | public when fixture routes enabled |
+| `/internal/*` | public when fixture routes enabled — **off by default** (`CIMMY_ENABLE_FIXTURE_ROUTES=0`); these routes return runs with no org filter, so only enable them locally |
 | `/login`, `/assets/*` | public |
 | UI + other `/api/*` | session required |
 

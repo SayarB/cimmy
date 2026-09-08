@@ -3,11 +3,12 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { Hono } from "hono";
 import { html, raw } from "hono/html";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import type { AppDeps } from "../app.js";
 import { githubConfigured } from "../config.js";
 import { enrolledRepos, runArtifacts, runs } from "../db/schema.js";
 import { authProviders } from "../auth/auth.js";
+import { requireOrg } from "../org.js";
 import type { AuthVars } from "../auth/session.js";
 import { authPage, escapeHtml, shellPage } from "../ui/layout.js";
 import { renderMarkdown } from "../ui/markdown.js";
@@ -102,12 +103,18 @@ export function uiRoutes(deps: AppDeps) {
 
   app.get("/", async (c) => {
     const user = c.get("user");
+    const orgId = await requireOrg(deps.db, user?.id);
     const repos = await deps.db
       .select()
       .from(enrolledRepos)
-      .where(eq(enrolledRepos.enabled, 1))
+      .where(and(eq(enrolledRepos.enabled, 1), eq(enrolledRepos.orgId, orgId)))
       .orderBy(enrolledRepos.fullName);
-    const recent = await deps.db.select().from(runs).orderBy(desc(runs.createdAt)).limit(20);
+    const recent = await deps.db
+      .select()
+      .from(runs)
+      .where(eq(runs.orgId, orgId))
+      .orderBy(desc(runs.createdAt))
+      .limit(20);
     const repoById = new Map(repos.map((r) => [r.id, r]));
 
     const latestByRepo = new Map<string, (typeof recent)[0]>();
@@ -417,8 +424,14 @@ export function uiRoutes(deps: AppDeps) {
     const tab = (c.req.query("tab") || "report").toLowerCase();
     const activeTab = ["report", "transcript", "meta"].includes(tab) ? tab : "report";
 
-    const runRows = await deps.db.select().from(runs).where(eq(runs.id, id)).limit(1);
+    const orgId = await requireOrg(deps.db, user?.id);
+    const runRows = await deps.db
+      .select()
+      .from(runs)
+      .where(and(eq(runs.id, id), eq(runs.orgId, orgId)))
+      .limit(1);
     const run = runRows[0];
+    // 404 rather than 403: do not confirm that another org's run id exists.
     if (!run) return c.text("Run not found", 404);
 
     const repoRows = await deps.db

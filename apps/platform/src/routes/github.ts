@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import type { AppDeps } from "../app.js";
 import { githubConfigured } from "../config.js";
 import { enrolledRepos, githubInstallations, runs } from "../db/schema.js";
@@ -8,10 +8,28 @@ import {
   installUrl,
   listInstallationRepos,
 } from "../github/app.js";
-import { ensureDefaultOrg } from "../org.js";
+import { requireOrg } from "../org.js";
+import type { AuthVars } from "../auth/session.js";
 
 export function githubRoutes(deps: AppDeps) {
-  const app = new Hono();
+  const app = new Hono<AuthVars>();
+
+  /**
+   * True when this installation_id already belongs to a different org.
+   * installation_id carries a global unique index, so an org-scoped lookup
+   * alone cannot distinguish "new" from "someone else's".
+   */
+  async function installationClaimedElsewhere(
+    installationId: string,
+    orgId: string,
+  ): Promise<boolean> {
+    const rows = await deps.db
+      .select()
+      .from(githubInstallations)
+      .where(eq(githubInstallations.installationId, installationId))
+      .limit(1);
+    return Boolean(rows[0] && rows[0].orgId !== orgId);
+  }
 
   app.get("/api/github/status", (c) => {
     return c.json({
@@ -37,14 +55,25 @@ export function githubRoutes(deps: AppDeps) {
     if (!installationId) {
       return c.json({ error: "missing installation_id" }, 400);
     }
-    const orgId = await ensureDefaultOrg(deps.db, deps.config.defaultOrgName);
+    const orgId = await requireOrg(deps.db, c.get("user")?.id);
     const account = await getInstallationAccount(deps.config, installationId).catch(() => null);
 
+    // Scope by org, then check global existence separately. Acting on a row
+    // found by installation_id alone would let one org mutate another's.
     const existing = await deps.db
       .select()
       .from(githubInstallations)
-      .where(eq(githubInstallations.installationId, installationId))
+      .where(
+        and(
+          eq(githubInstallations.installationId, installationId),
+          eq(githubInstallations.orgId, orgId),
+        ),
+      )
       .limit(1);
+
+    if (!existing[0] && (await installationClaimedElsewhere(installationId, orgId))) {
+      return c.redirect("/connect?error=already_connected");
+    }
 
     if (existing[0]) {
       await deps.db
@@ -77,13 +106,24 @@ export function githubRoutes(deps: AppDeps) {
       return c.json({ error: "installation_id required" }, 400);
     }
     const installationId = String(body.installation_id);
-    const orgId = await ensureDefaultOrg(deps.db, deps.config.defaultOrgName);
+    const orgId = await requireOrg(deps.db, c.get("user")?.id);
+
+    // Ownership check before the App call, so a foreign installation id cannot
+    // be probed and its account_login echoed back.
+    if (await installationClaimedElsewhere(installationId, orgId)) {
+      return c.json({ error: "installation already connected" }, 409);
+    }
     const account = await getInstallationAccount(deps.config, installationId);
 
     const existing = await deps.db
       .select()
       .from(githubInstallations)
-      .where(eq(githubInstallations.installationId, installationId))
+      .where(
+        and(
+          eq(githubInstallations.installationId, installationId),
+          eq(githubInstallations.orgId, orgId),
+        ),
+      )
       .limit(1);
 
     let row = existing[0];
@@ -108,7 +148,11 @@ export function githubRoutes(deps: AppDeps) {
   });
 
   app.get("/api/github/installations", async (c) => {
-    const rows = await deps.db.select().from(githubInstallations);
+    const orgId = await requireOrg(deps.db, c.get("user")?.id);
+    const rows = await deps.db
+      .select()
+      .from(githubInstallations)
+      .where(eq(githubInstallations.orgId, orgId));
     return c.json({
       installations: rows.map((r) => ({
         id: r.id,
@@ -124,9 +168,16 @@ export function githubRoutes(deps: AppDeps) {
     if (!githubConfigured(deps.config)) {
       return c.json({ error: "GitHub App not configured" }, 503);
     }
-    const installations = await deps.db.select().from(githubInstallations);
+    const orgId = await requireOrg(deps.db, c.get("user")?.id);
+    const installations = await deps.db
+      .select()
+      .from(githubInstallations)
+      .where(eq(githubInstallations.orgId, orgId));
     const active = installations.filter((i) => i.suspended !== 1);
-    const enrolled = await deps.db.select().from(enrolledRepos);
+    const enrolled = await deps.db
+      .select()
+      .from(enrolledRepos)
+      .where(eq(enrolledRepos.orgId, orgId));
     const enrolledByGithubId = new Map(
       enrolled.filter((r) => r.githubRepoId).map((r) => [String(r.githubRepoId), r]),
     );
@@ -176,7 +227,19 @@ export function githubRoutes(deps: AppDeps) {
     if (!githubConfigured(deps.config)) {
       return c.json({ error: "GitHub App not configured" }, 503);
     }
+    const orgId = await requireOrg(deps.db, c.get("user")?.id);
     const installationId = c.req.param("installationId");
+    const owned = await deps.db
+      .select()
+      .from(githubInstallations)
+      .where(
+        and(
+          eq(githubInstallations.installationId, installationId),
+          eq(githubInstallations.orgId, orgId),
+        ),
+      )
+      .limit(1);
+    if (!owned[0]) return c.json({ error: "not found" }, 404);
     const repos = await listInstallationRepos(deps.config, installationId);
     return c.json({ repos });
   });
@@ -195,11 +258,15 @@ export function githubRoutes(deps: AppDeps) {
       return c.json({ error: "github_repo_id and full_name required" }, 400);
     }
 
+    const orgId = await requireOrg(deps.db, c.get("user")?.id);
     let installationId = body.installation_id ? String(body.installation_id) : "";
     if (!installationId) {
-      const installations = (await deps.db.select().from(githubInstallations)).filter(
-        (i) => i.suspended !== 1,
-      );
+      const installations = (
+        await deps.db
+          .select()
+          .from(githubInstallations)
+          .where(eq(githubInstallations.orgId, orgId))
+      ).filter((i) => i.suspended !== 1);
       for (const inst of installations) {
         const listed = await listInstallationRepos(deps.config, inst.installationId);
         if (
@@ -221,17 +288,21 @@ export function githubRoutes(deps: AppDeps) {
     const inst = await deps.db
       .select()
       .from(githubInstallations)
-      .where(eq(githubInstallations.installationId, installationId))
+      .where(
+        and(
+          eq(githubInstallations.installationId, installationId),
+          eq(githubInstallations.orgId, orgId),
+        ),
+      )
       .limit(1);
     if (!inst[0] || inst[0].suspended === 1) {
       return c.json({ error: "GitHub account not connected" }, 400);
     }
 
-    const orgId = inst[0].orgId;
     const existing = await deps.db
       .select()
       .from(enrolledRepos)
-      .where(eq(enrolledRepos.fullName, body.full_name))
+      .where(and(eq(enrolledRepos.fullName, body.full_name), eq(enrolledRepos.orgId, orgId)))
       .limit(1);
 
     if (existing[0]) {
@@ -264,8 +335,13 @@ export function githubRoutes(deps: AppDeps) {
   });
 
   app.post("/api/repos/:id/disable", async (c) => {
+    const orgId = await requireOrg(deps.db, c.get("user")?.id);
     const id = c.req.param("id");
-    const rows = await deps.db.select().from(enrolledRepos).where(eq(enrolledRepos.id, id)).limit(1);
+    const rows = await deps.db
+      .select()
+      .from(enrolledRepos)
+      .where(and(eq(enrolledRepos.id, id), eq(enrolledRepos.orgId, orgId)))
+      .limit(1);
     if (!rows[0]) return c.json({ error: "not found" }, 404);
     const [updated] = await deps.db
       .update(enrolledRepos)
@@ -276,7 +352,11 @@ export function githubRoutes(deps: AppDeps) {
   });
 
   app.get("/api/repos", async (c) => {
-    const rows = await deps.db.select().from(enrolledRepos);
+    const orgId = await requireOrg(deps.db, c.get("user")?.id);
+    const rows = await deps.db
+      .select()
+      .from(enrolledRepos)
+      .where(eq(enrolledRepos.orgId, orgId));
     return c.json({
       repos: rows.map((r) => ({
         id: r.id,
@@ -289,9 +369,14 @@ export function githubRoutes(deps: AppDeps) {
   });
 
   app.post("/api/repos/:id/runs", async (c) => {
+    const orgId = await requireOrg(deps.db, c.get("user")?.id);
     const id = c.req.param("id");
     const body = (await c.req.json().catch(() => ({}))) as { timeout_minutes?: number };
-    const rows = await deps.db.select().from(enrolledRepos).where(eq(enrolledRepos.id, id)).limit(1);
+    const rows = await deps.db
+      .select()
+      .from(enrolledRepos)
+      .where(and(eq(enrolledRepos.id, id), eq(enrolledRepos.orgId, orgId)))
+      .limit(1);
     const repo = rows[0];
     if (!repo || repo.enabled !== 1) {
       return c.json({ error: "repo not found or disabled" }, 404);
@@ -331,9 +416,15 @@ export function githubRoutes(deps: AppDeps) {
   });
 
   app.get("/api/runs/:id", async (c) => {
+    const orgId = await requireOrg(deps.db, c.get("user")?.id);
     const id = c.req.param("id");
-    const rows = await deps.db.select().from(runs).where(eq(runs.id, id)).limit(1);
+    const rows = await deps.db
+      .select()
+      .from(runs)
+      .where(and(eq(runs.id, id), eq(runs.orgId, orgId)))
+      .limit(1);
     const run = rows[0];
+    // 404 rather than 403: do not confirm that another org's run id exists.
     if (!run) return c.json({ error: "not found" }, 404);
     return c.json(run);
   });

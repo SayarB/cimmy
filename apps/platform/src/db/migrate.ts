@@ -136,4 +136,31 @@ export async function migrate(db: Db): Promise<void> {
     CREATE UNIQUE INDEX IF NOT EXISTS schedule_cursors_repo_skill_uidx
       ON schedule_cursors (repo_id, skill_id)
   `);
+
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS org_members (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      org_id uuid NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      user_id text NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+      role text NOT NULL DEFAULT 'owner',
+      created_at timestamptz NOT NULL DEFAULT now()
+    )
+  `);
+  await db.execute(sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS org_members_org_user_uidx ON org_members (org_id, user_id)
+  `);
+  await db.execute(sql`
+    CREATE INDEX IF NOT EXISTS org_members_user_idx ON org_members (user_id)
+  `);
+
+  // Backfill: pre-existing orgs predate memberships. Attach each to the earliest
+  // user so nothing is orphaned when routes start scoping by membership.
+  await db.execute(sql`
+    INSERT INTO org_members (org_id, user_id, role)
+    SELECT o.id, u.id, 'owner'
+    FROM organizations o
+    CROSS JOIN LATERAL (SELECT id FROM "user" ORDER BY created_at LIMIT 1) u
+    WHERE NOT EXISTS (SELECT 1 FROM org_members m WHERE m.org_id = o.id)
+    ON CONFLICT DO NOTHING
+  `);
 }

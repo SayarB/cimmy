@@ -8,6 +8,7 @@ import {
   jsonb,
   boolean,
   uniqueIndex,
+  index,
 } from "drizzle-orm/pg-core";
 
 /** Better Auth tables — keep field names aligned with the adapter. */
@@ -67,6 +68,26 @@ export const organizations = pgTable("organizations", {
   name: text("name").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+/** User-to-org link. One user per org today; the join table makes many later a new row. */
+export const orgMembers = pgTable(
+  "org_members",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    role: text("role").notNull().default("owner"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("org_members_org_user_uidx").on(t.orgId, t.userId),
+    index("org_members_user_idx").on(t.userId),
+  ],
+);
 
 export const githubInstallations = pgTable(
   "github_installations",

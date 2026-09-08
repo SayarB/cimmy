@@ -1,8 +1,9 @@
 import { eq } from "drizzle-orm";
 import type { Db } from "./client.js";
-import { enrolledRepos, organizations } from "./schema.js";
+import { enrolledRepos, orgMembers, organizations, user } from "./schema.js";
 
 export const FIXTURE_ORG_NAME = "fixture-org";
+export const FIXTURE_USER_ID = "fixture-user";
 export const FIXTURE_REPO_FULL_NAME = "fixture/sample-repo";
 
 export async function seedFixture(db: Db): Promise<{ orgId: string; repoId: string }> {
@@ -19,6 +20,26 @@ export async function seedFixture(db: Db): Promise<{ orgId: string; repoId: stri
       .values({ name: FIXTURE_ORG_NAME })
       .returning();
     orgId = org!.id;
+  }
+
+  // Fixture runs have no session, but the org still needs an owner so the
+  // membership invariant holds everywhere.
+  const existingUser = await db.select().from(user).where(eq(user.id, FIXTURE_USER_ID)).limit(1);
+  if (!existingUser[0]) {
+    await db.insert(user).values({
+      id: FIXTURE_USER_ID,
+      name: "Fixture",
+      email: "fixture@cimmy.local",
+      emailVerified: true,
+    });
+  }
+  const existingMember = await db
+    .select()
+    .from(orgMembers)
+    .where(eq(orgMembers.userId, FIXTURE_USER_ID))
+    .limit(1);
+  if (!existingMember[0]) {
+    await db.insert(orgMembers).values({ orgId, userId: FIXTURE_USER_ID, role: "owner" });
   }
 
   const existingRepo = await db

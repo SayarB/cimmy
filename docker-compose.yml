@@ -36,7 +36,7 @@ services:
       DATABASE_URL: postgres://cimmy:cimmy@postgres:5432/cimmy
       PORT: "3000"
       CIMMY_PUBLIC_URL: ${CIMMY_PUBLIC_URL:-http://127.0.0.1:13000}
-      CIMMY_ENABLE_FIXTURE_ROUTES: "1"
+      CIMMY_ENABLE_FIXTURE_ROUTES: ${CIMMY_ENABLE_FIXTURE_ROUTES:-0}
       CIMMY_RUNTIME_IMAGE: cimmy-cursor-runtime:local
       CIMMY_ARTIFACTS_DIR: /data/artifacts
       CIMMY_AGENT_STUB: ${CIMMY_AGENT_STUB:-1}
