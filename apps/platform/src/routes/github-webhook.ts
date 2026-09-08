@@ -3,7 +3,6 @@ import { Hono } from "hono";
 import { eq } from "drizzle-orm";
 import type { AppDeps } from "../app.js";
 import { githubInstallations } from "../db/schema.js";
-import { ensureDefaultOrg } from "../org.js";
 
 function verifySignature(secret: string, rawBody: string, signatureHeader: string | undefined): boolean {
   if (!signatureHeader?.startsWith("sha256=")) return false;
@@ -48,7 +47,6 @@ export function githubWebhookRoutes(deps: AppDeps) {
 
     if (event === "installation" && payload.installation?.id) {
       const installationId = String(payload.installation.id);
-      const orgId = await ensureDefaultOrg(deps.db, deps.config.defaultOrgName);
       const existing = await deps.db
         .select()
         .from(githubInstallations)
@@ -77,12 +75,11 @@ export function githubWebhookRoutes(deps: AppDeps) {
             })
             .where(eq(githubInstallations.id, existing[0].id));
         } else {
-          await deps.db.insert(githubInstallations).values({
-            orgId,
+          // No session here, so we cannot know whose org this installation is.
+          // Creation happens on /api/github/callback, which is authenticated.
+          console.info("ignoring installation webhook for unknown installation", {
             installationId,
-            accountLogin: payload.installation.account?.login ?? null,
-            accountType: payload.installation.account?.type ?? null,
-            suspended: 0,
+            action: payload.action,
           });
         }
       }

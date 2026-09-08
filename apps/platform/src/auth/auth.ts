@@ -4,6 +4,7 @@ import { magicLink } from "better-auth/plugins/magic-link";
 import type { Db } from "../db/client.js";
 import type { Config } from "../config.js";
 import * as schema from "../db/schema.js";
+import { ensureUserOrg } from "../org.js";
 
 /** Narrow surface so we do not re-export Better Auth’s deep package types. */
 export type Auth = {
@@ -76,6 +77,17 @@ export function createAuth(db: Db, config: Config): Auth {
         verification: schema.verification,
       },
     }),
+    databaseHooks: {
+      user: {
+        create: {
+          // Every signup path (OAuth, magic link) funnels through here, so the
+          // org is created in one place rather than in each route.
+          after: async (created: { id: string; name?: string; email: string }) => {
+            await ensureUserOrg(db, created.id, created.name || created.email);
+          },
+        },
+      },
+    },
     secret: config.authSecret,
     baseURL: config.publicUrl,
     trustedOrigins: [config.publicUrl],

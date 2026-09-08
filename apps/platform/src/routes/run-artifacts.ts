@@ -1,9 +1,11 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { Hono } from "hono";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import type { AppDeps } from "../app.js";
 import { runArtifacts, runs } from "../db/schema.js";
+import { requireOrg } from "../org.js";
+import type { AuthVars } from "../auth/session.js";
 
 const ALLOWED_KINDS = new Set(["report", "transcript", "meta", "error", "events", "other_out"]);
 
@@ -14,11 +16,17 @@ function safeUnderRoot(root: string, candidate: string): boolean {
 }
 
 export function runArtifactRoutes(deps: AppDeps) {
-  const app = new Hono();
+  const app = new Hono<AuthVars>();
 
   app.get("/api/runs/:id/artifacts", async (c) => {
+    const orgId = await requireOrg(deps.db, c.get("user")?.id);
     const id = c.req.param("id");
-    const runRows = await deps.db.select().from(runs).where(eq(runs.id, id)).limit(1);
+    const runRows = await deps.db
+      .select()
+      .from(runs)
+      .where(and(eq(runs.id, id), eq(runs.orgId, orgId)))
+      .limit(1);
+    // 404 rather than 403: do not confirm that another org's run id exists.
     if (!runRows[0]) return c.json({ error: "not found" }, 404);
 
     const rows = await deps.db.select().from(runArtifacts).where(eq(runArtifacts.runId, id));
@@ -34,11 +42,19 @@ export function runArtifactRoutes(deps: AppDeps) {
   });
 
   app.get("/api/runs/:id/artifacts/:kind", async (c) => {
+    const orgId = await requireOrg(deps.db, c.get("user")?.id);
     const id = c.req.param("id");
     const kind = c.req.param("kind");
     if (!ALLOWED_KINDS.has(kind)) {
       return c.json({ error: "unsupported kind" }, 400);
     }
+
+    const runRows = await deps.db
+      .select()
+      .from(runs)
+      .where(and(eq(runs.id, id), eq(runs.orgId, orgId)))
+      .limit(1);
+    if (!runRows[0]) return c.json({ error: "not found" }, 404);
 
     const rows = await deps.db
       .select()

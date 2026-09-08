@@ -11,6 +11,8 @@ echo "==> Building cursor-runtime image"
 docker build -t cimmy-cursor-runtime:local -f docker/cursor-runtime/Dockerfile .
 
 echo "==> Starting compose (postgres + platform)"
+# /internal/* is public, so fixture routes are off by default and opted into here.
+export CIMMY_ENABLE_FIXTURE_ROUTES=1
 docker compose up -d --build postgres platform
 
 echo "==> Waiting for health"

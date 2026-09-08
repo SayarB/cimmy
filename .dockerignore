@@ -1,0 +1,24 @@
+# pnpm installs inside the image. Copying the host's node_modules drags in
+# symlinks pointing at the workspace-root store, which is never copied — they
+# then shadow the image's own install and the build fails to resolve modules.
+node_modules
+**/node_modules
+
+# Build output — the image builds its own.
+dist
+**/dist
+*.tsbuildinfo
+**/*.tsbuildinfo
+
+# Never bake secrets or local config into an image layer.
+.env
+.env.*
+!.env.example
+
+# Not needed at build time.
+.git
+.gitignore
+.plans
+.audits
+*.log
+.DS_Store
